@@ -53,3 +53,33 @@ bool validaEntrada(int argc, char *argv[], Config *config) {
 
     return true;
 }
+
+void inicializaMetricas(Metricas *metricas)
+{
+    metricas->transferencias = 0;
+    metricas->comparacoes = 0;
+    metricas->tempo = 0.0;
+}
+
+void printMetricas(Metricas metricas){
+    printf("\n\t\tMétricas \n");
+    printf("  Comparações    : %6d \n", metricas.comparacoes);
+    printf("  Transferências : %6d \n", metricas.transferencias);
+    printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
+}
+
+int* criaVetor(int tamanho)
+{
+    int *vetor = (int *)malloc(sizeof(int) * tamanho);
+    if (!vetor)
+    {
+        printf("Erro ao alocar memória para o vetor.\n");
+        exit(1);
+    }
+    return vetor;
+}
+
+void destroiVetor(int *vet)
+{
+    free(vet);
+}

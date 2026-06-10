@@ -10,6 +10,16 @@ typedef struct{
     bool p;
 } Config;
 
+typedef struct{
+    int transferencias;
+    int comparacoes;
+    double tempo;
+} Metricas;
+
 bool validaEntrada(int argc, char *argv[],Config *config);
+void inicializaMetricas(Metricas *metricas);
+void printMetricas(Metricas metricas);
+int *criaVetor(int tamanho);
+void destroiVetor(int *vet);
 
 #endif
