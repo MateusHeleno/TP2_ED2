@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
     Config config;
     if(!validaEntrada(argc,argv, &config))
-        return 1;
+        return 1;   
 
     Metricas metricas;
     clock_t comeco, fim;

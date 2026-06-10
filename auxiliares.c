@@ -56,15 +56,17 @@ bool validaEntrada(int argc, char *argv[], Config *config) {
 
 void inicializaMetricas(Metricas *metricas)
 {
-    metricas->transferencias = 0;
+    metricas->ler_reg = 0;
+    metricas->escrita_reg = 0;
     metricas->comparacoes = 0;
     metricas->tempo = 0.0;
 }
 
 void printMetricas(Metricas metricas){
     printf("\n\t\tMétricas \n");
+    printf("  Leituras    : %6d \n", metricas.ler_reg);
+    printf("  Escrita     : %6d \n", metricas.escrita_reg);
     printf("  Comparações    : %6d \n", metricas.comparacoes);
-    printf("  Transferências : %6d \n", metricas.transferencias);
     printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
 }
 
@@ -82,4 +84,86 @@ int* criaVetor(int tamanho)
 void destroiVetor(int *vet)
 {
     free(vet);
+}
+
+bool compararNos(NoHeap a, NoHeap b)
+{
+    if (a.marcado != b.marcado) // se os dois forem marcados, fala qual é o maior, se nao fala o marcaddo
+    {
+        if(a.marcado)
+            return true;
+        else 
+            return false;
+    }
+
+    if (a.reg.nota < b.reg.nota)
+        return false;
+    if (a.reg.nota >= b.reg.nota)
+        return true;
+
+    return false
+}
+
+void trocarNos(NoHeap *a, NoHeap *b) // so troca os nos
+{
+    NoHeap aux = *a;
+    *a = *b;
+    *b = aux;
+}
+
+void descerNoHeap(MinHeap *heap, int i, Metricas *metricas)
+{
+    int menor = i; // posição recebida
+    int esq = 2 * i + 1; // pos do filho da esq no vetor
+    int dir = 2 * i + 2; // pos do filho da dir no vetor
+
+    if (esq < heap->tamanho) 
+    {
+        metricas->comparacoes++;
+        if (!compararNos(heap->dados[esq], heap->dados[menor]))
+        {
+            menor = esq; 
+        }
+    }
+
+    if (dir < heap->tamanho)
+    {
+        metricas->comparacoes++;
+        if (!compararNos(heap->dados[dir], heap->dados[menor])) // s eo menor foi atualizado antes, ele ta compaando os irmaos
+        {
+            menor = dir;
+        }
+    }
+
+    if (menor != i)
+    {
+        trocarNos(&heap->dados[i], &heap->dados[menor]);
+        descerNoHeap(heap, menor, metricas);
+    }
+}
+
+void construirMinHeap(MinHeap *heap, Metricas *metricas)
+{
+    for (int i = (heap->tamanho / 2) - 1; i >= 0; i--)
+    {
+        descerNoHeap(heap, i, metricas);
+    }
+}
+
+void substituirRaiz(MinHeap *heap, NoHeap novoNo, Metricas *metricas)
+{
+    if (heap->tamanho <= 0)
+        return;
+    heap->dados[0] = novoNo; // o heap sempre tira a raiz
+    descerNoHeap(heap, 0, metricas);
+}
+
+void removerRaiz(MinHeap *heap, Metricas *metricas) // se nao tiver nada pra colocar
+{
+    if (heap->tamanho <= 0)
+        return;
+
+    heap->dados[0] = heap->dados[heap->tamanho - 1]; // puxei um pra raiz
+    heap->tamanho--; // diminui , pq nao coloquei nd
+    descerNoHeap(heap, 0, metricas); // e vou refazer
 }
