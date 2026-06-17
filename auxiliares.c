@@ -226,3 +226,22 @@ void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir,
 
     fclose(arq);
 }
+
+bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo) {
+    char nomeFita[20];
+    for(int i = inicio; i < fim; i++) {
+        sprintf(nomeFita, "fita%02d.txt", i);
+        fitas[i] = fopen(nomeFita, modo);
+        if(!fitas[i]) return false;
+    }
+    return true;
+}
+
+void fecharFitas(FILE *fitas[], int inicio, int fim) {
+    for(int i = inicio; i < fim; i++) {
+        if(fitas[i]) {
+            fclose(fitas[i]);
+            fitas[i] = NULL;
+        }
+    }
+}

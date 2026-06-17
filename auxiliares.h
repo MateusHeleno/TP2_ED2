@@ -56,5 +56,7 @@ void removerRaiz(MinHeap *heap, Metricas *metricas);
 bool lerRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
 void escreverRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
 void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir, Metricas *metricas);
+bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo);
+void fecharFitas(FILE *fitas[], int inicio, int fim);
 
 #endif
