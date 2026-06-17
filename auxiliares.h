@@ -53,4 +53,8 @@ void construirMinHeap(MinHeap *heap, Metricas *metricas);
 void substituirRaiz(MinHeap *heap, NoHeap novoNo, Metricas *metricas);
 void removerRaiz(MinHeap *heap, Metricas *metricas);
 
+bool lerRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
+void escreverRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
+void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir, Metricas *metricas);
+
 #endif
