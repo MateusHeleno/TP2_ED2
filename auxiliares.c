@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "auxiliares.h"
+#include "quicksort.h"
 
 bool validaEntrada(int argc, char *argv[], Config *config)
 {
@@ -244,4 +245,154 @@ void fecharFitas(FILE *fitas[], int inicio, int fim) {
             fitas[i] = NULL;
         }
     }
+}
+
+bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
+    char linha[200];
+    
+    //Tenta ler uma linha inteira do arquivo.
+    if (fgets(linha, sizeof(linha), arq) == NULL) 
+        return false;
+    
+    //Se a linha for vazia ou curta
+    if (strlen(linha) < 5) 
+        return false;
+
+    //Retirada dos dados especificos
+    
+    //Inscrição
+    char insc[9] = {0}; 
+    strncpy(insc, &linha[0], 8);
+    reg->inscricao = atol(insc); //Converte o texto para long
+
+    //Nota
+    char notaStr[6] = {0}; 
+    strncpy(notaStr, &linha[9], 5);
+    reg->nota = atof(notaStr); // Converte o texto para float
+
+    //Estado
+    strncpy(reg->estado, &linha[15], 2); 
+    reg->estado[2] = '\0';
+
+    //Cidade
+    strncpy(reg->cidade, &linha[18], 50); 
+    reg->cidade[50] = '\0';
+
+    //Curso
+    strncpy(reg->curso, &linha[69], 30); 
+    reg->curso[30] = '\0';
+
+    if (metricas) 
+        metricas->ler_reg++;
+    return true;
+}
+
+bool prepararArquivoInicial(Config *config, Metricas *metricas) {
+    //Tenta abrir o arquivo base
+    FILE *origem = fopen("PROVAO.TXT", "r");
+    if(!origem) {
+        printf("Erro: Arquivo PROVAO.TXT nao encontrado no diretorio.\n");
+        return false;
+    }
+
+    //Tenta abrir o arquivo a ser preparado
+    FILE *destino = fopen("entrada_atual.txt", "w");
+    if(!destino) {
+        fclose(origem);
+        return false;
+    }
+
+    //Copia as N primeiras linhas do arquivo de dados para o que vai ser preparado
+    NoHeap no;
+    int totalLidos = 0;
+    while (totalLidos < config->qnt_registros && lerRegistroTexto(origem, &no.reg, NULL)) {
+        gravarRegistroTexto(destino, &no.reg, NULL);
+        totalLidos++;
+    }
+    fclose(origem);
+    fclose(destino);
+
+    //Situacao 1
+    if (config->situacao == 1) {
+        //Metricas falsas para a fase do preparo
+        Metricas metricasPreparo;
+        inicializaMetricas(&metricasPreparo);
+        
+        //Usando o quicksort para fazer a ordenacao inicial solicitada
+        metodo3_QuicksortExterno(config, &metricasPreparo);
+    }
+    
+    //Situacao 2
+    else if (config->situacao == 2) {
+        //Metricas falsas para a fase do preparo
+        Metricas metricasPreparo;
+        inicializaMetricas(&metricasPreparo);
+        
+        //Ordena crescentemente primeiro
+        metodo3_QuicksortExterno(config, &metricasPreparo);
+        
+        //Inversao
+        FILE *fAsc = fopen("resultado_final.txt", "r");//Arquivo final do quicksort
+        FILE *fDesc = fopen("entrada_atual_desc.txt", "w");//Arquivo que recebera invertido
+        
+        if (fAsc && fDesc) {
+            Registro r;
+            //Le de tras para frente
+            for (int i = config->qnt_registros - 1; i >= 0; i--) {
+                fseek(fAsc, (long)i * 100, SEEK_SET);
+                if (lerRegistroTexto(fAsc, &r, NULL)) {
+                    gravarRegistroTexto(fDesc, &r, NULL);
+                }
+            }
+        }
+        
+        if (fAsc) fclose(fAsc);
+        if (fDesc) fclose(fDesc);
+        
+        //Troca o nome do arquivo preparado
+        remove("entrada_atual.txt");
+        rename("entrada_atual_desc.txt", "entrada_atual.txt");
+    }
+    //-P
+    if (config->p) {
+        //Imprime o arquivo
+        FILE *fVerificacao = fopen("entrada_atual.txt", "r");
+        if (fVerificacao) {
+            Registro r;
+            while (lerRegistroTexto(fVerificacao, &r, NULL)) {
+                printf("[Preparo Inicial] ");
+                imprimirRegistro(&r);
+            }
+            fclose(fVerificacao);
+        }
+    }
+
+    return true;
+}
+
+void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
+    //Gravacao no arquivo
+    //%08ld  : Inscrição
+    //%5.1f  : Nota
+    //%-2s   : Estado
+    //%-50s  : Cidade
+    //%-30s  : Curso
+    fprintf(arq, "%08ld %5.1f %-2s %-50s %-30s\n", 
+            reg->inscricao, 
+            reg->nota, 
+            reg->estado, 
+            reg->cidade, 
+            reg->curso);
+    if (metricas != NULL) {
+        metricas->escrita_reg++;
+    }
+}
+
+void imprimirRegistro(Registro *reg) {
+    printf("%08ld | Nota: %5.1f | %s | %-20s | %-20s\n", 
+            reg->inscricao, 
+            reg->nota, 
+            reg->estado, 
+            reg->cidade, 
+            reg->curso);
 }

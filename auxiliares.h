@@ -58,5 +58,9 @@ void escreverRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
 void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir, Metricas *metricas);
 bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo);
 void fecharFitas(FILE *fitas[], int inicio, int fim);
+bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
+bool prepararArquivoInicial(Config *config, Metricas *metricas);
+void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
+void imprimirRegistro(Registro *reg);
 
 #endif
