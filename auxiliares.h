@@ -40,6 +40,11 @@ typedef struct
     int tamanho;
 } MinHeap;
 
+typedef struct {
+    Registro reg;
+    int fita_origem;
+} RegFita;
+
 bool validaEntrada(int argc, char *argv[],Config *config);
 void inicializaMetricas(Metricas *metricas);
 void printMetricas(Metricas metricas);
@@ -53,14 +58,13 @@ void construirMinHeap(MinHeap *heap, Metricas *metricas);
 void substituirRaiz(MinHeap *heap, NoHeap novoNo, Metricas *metricas);
 void removerRaiz(MinHeap *heap, Metricas *metricas);
 
-bool lerRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
-void escreverRegistroBin(FILE *arq, Registro *reg, Metricas *metricas);
-void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir, Metricas *metricas);
 bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo);
 void fecharFitas(FILE *fitas[], int inicio, int fim);
 bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
 bool prepararArquivoInicial(Config *config, Metricas *metricas);
 void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
 void imprimirRegistro(Registro *reg);
+void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas);
+void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas);
 
 #endif

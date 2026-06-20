@@ -5,7 +5,7 @@
 
 #include "auxiliares.h"
 #include "quicksort.h"
-// #include "intercalacao.h"
+#include "balanceadaOI.h"
 // #include "polifasica.h"
 
 int main(int argc, char *argv[]) {
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     switch (config.metodo) {
         case 1:
             printf("Iniciando o Metodo 1: Intercalacao Balanceada...\n");
-            // metodo1_IntercalacaoNormal(&config, &metricas);
+            intercalacaoOI(&config, &metricas);
             printf("Ainda nao implementado no main.\n");
             break;
 

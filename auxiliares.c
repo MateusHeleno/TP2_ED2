@@ -5,6 +5,15 @@
 #include "auxiliares.h"
 #include "quicksort.h"
 
+// codigo de criacao de uma pasta pras fitas
+#ifdef _WIN32
+#include <direct.h>
+#define CRIAR_PASTA(caminho) _mkdir(caminho)
+#else
+#include <sys/stat.h>
+#define CRIAR_PASTA(caminho) mkdir(caminho, 0777)
+#endif
+
 bool validaEntrada(int argc, char *argv[], Config *config)
 {
     if (argc < 4 || argc > 5)
@@ -26,7 +35,7 @@ bool validaEntrada(int argc, char *argv[], Config *config)
         printf("A quantidade de registros não pode ser maior do que 471.705!\n");
         return false;
     }
-    bool aux;
+    bool aux = false;
     for (int i = 100; i <= 100000; i = i * 10)
     {
         if (config->qnt_registros == i || config->qnt_registros == 471705)
@@ -181,185 +190,161 @@ void removerRaiz(MinHeap *heap, Metricas *metricas) // se nao tiver nada pra col
     descerNoHeap(heap, 0, metricas);                 // e vou refazer
 }
 
-bool lerRegistroBin(FILE *arq, Registro *reg, Metricas *metricas)
+bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo)
 {
-    if (fread(reg, sizeof(Registro), 1, arq) == 1)
+    CRIAR_PASTA("fitas");
+
+    char nomeFita[30];
+    for (int i = inicio; i < fim; i++)
     {
-        metricas->ler_reg++;
-        return true;
-    }
-    return false;
-}
-
-void escreverRegistroBin(FILE *arq, Registro *reg, Metricas *metricas)
-{
-    fwrite(reg, sizeof(Registro), 1, arq);
-    metricas->escrita_reg++;
-}
-
-void lerEExibirRegistros(const char *nomeArquivo, int quantidade, bool imprimir, Metricas *metricas)
-{
-    FILE *arq = fopen(nomeArquivo, "rb");
-    if (arq == NULL)
-    {
-        printf("Erro ao abrir o arquivo %s para leitura.\n", nomeArquivo);
-        return;
-    }
-
-    Registro reg;
-    int lidos = 0;
-
-    while (lidos < quantidade && lerRegistroBin(arq, &reg, metricas))
-    {
-        lidos++;
-
-        if (imprimir) // imprime registros quando a flag -P for aplicada
-        {
-            printf("Inscricao: %08ld | Nota: %5.1f | Estado: %s | Cidade: %-25s | Curso: %s\n",
-                   reg.inscricao, reg.nota, reg.estado, reg.cidade, reg.curso);
-        }
-    }
-
-    if (lidos < quantidade)
-    {
-        printf("Aviso: O arquivo continha apenas %d registros, mas %d foram solicitados.\n", lidos, quantidade);
-    }
-
-    fclose(arq);
-}
-
-bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo) {
-    char nomeFita[20];
-    for(int i = inicio; i < fim; i++) {
-        sprintf(nomeFita, "fita%02d.txt", i);
+        sprintf(nomeFita, "fitas/fita%02d.txt", i);
         fitas[i] = fopen(nomeFita, modo);
-        if(!fitas[i]) return false;
+        if (!fitas[i])
+            return false;
     }
     return true;
 }
 
-void fecharFitas(FILE *fitas[], int inicio, int fim) {
-    for(int i = inicio; i < fim; i++) {
-        if(fitas[i]) {
+void fecharFitas(FILE *fitas[], int inicio, int fim)
+{
+    for (int i = inicio; i < fim; i++)
+    {
+        if (fitas[i])
+        {
             fclose(fitas[i]);
             fitas[i] = NULL;
         }
     }
 }
 
-bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
+bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas)
+{
     char linha[200];
-    
-    //Tenta ler uma linha inteira do arquivo.
-    if (fgets(linha, sizeof(linha), arq) == NULL) 
-        return false;
-    
-    //Se a linha for vazia ou curta
-    if (strlen(linha) < 5) 
+
+    // Tenta ler uma linha inteira do arquivo.
+    if (fgets(linha, sizeof(linha), arq) == NULL)
         return false;
 
-    //Retirada dos dados especificos
-    
-    //Inscrição
-    char insc[9] = {0}; 
+    // Se a linha for vazia ou curta
+    if (strlen(linha) < 5)
+        return false;
+
+    // Retirada dos dados especificos
+
+    // Inscrição
+    char insc[9] = {0};
     strncpy(insc, &linha[0], 8);
-    reg->inscricao = atol(insc); //Converte o texto para long
+    reg->inscricao = atol(insc); // Converte o texto para long
 
-    //Nota
-    char notaStr[6] = {0}; 
+    // Nota
+    char notaStr[6] = {0};
     strncpy(notaStr, &linha[9], 5);
     reg->nota = atof(notaStr); // Converte o texto para float
 
-    //Estado
-    strncpy(reg->estado, &linha[15], 2); 
+    // Estado
+    strncpy(reg->estado, &linha[15], 2);
     reg->estado[2] = '\0';
 
-    //Cidade
-    strncpy(reg->cidade, &linha[18], 50); 
+    // Cidade
+    strncpy(reg->cidade, &linha[18], 50);
     reg->cidade[50] = '\0';
 
-    //Curso
-    strncpy(reg->curso, &linha[69], 30); 
+    // Curso
+    strncpy(reg->curso, &linha[69], 30);
     reg->curso[30] = '\0';
 
-    if (metricas) 
+    if (metricas)
         metricas->ler_reg++;
     return true;
 }
 
-bool prepararArquivoInicial(Config *config, Metricas *metricas) {
-    //Tenta abrir o arquivo base
+bool prepararArquivoInicial(Config *config, Metricas *metricas)
+{
+    // Tenta abrir o arquivo base
     FILE *origem = fopen("PROVAO.TXT", "r");
-    if(!origem) {
+    if (!origem)
+    {
         printf("Erro: Arquivo PROVAO.TXT nao encontrado no diretorio.\n");
         return false;
     }
 
-    //Tenta abrir o arquivo a ser preparado
+    // Tenta abrir o arquivo a ser preparado
     FILE *destino = fopen("entrada_atual.txt", "w");
-    if(!destino) {
+    if (!destino)
+    {
         fclose(origem);
         return false;
     }
 
-    //Copia as N primeiras linhas do arquivo de dados para o que vai ser preparado
+    // Copia as N primeiras linhas do arquivo de dados para o que vai ser preparado
     NoHeap no;
     int totalLidos = 0;
-    while (totalLidos < config->qnt_registros && lerRegistroTexto(origem, &no.reg, NULL)) {
+    while (totalLidos < config->qnt_registros && lerRegistroTexto(origem, &no.reg, NULL))
+    {
         gravarRegistroTexto(destino, &no.reg, NULL);
         totalLidos++;
     }
     fclose(origem);
     fclose(destino);
 
-    //Situacao 1
-    if (config->situacao == 1) {
-        //Metricas falsas para a fase do preparo
+    // Situacao 1
+    if (config->situacao == 1)
+    {
+        // Metricas falsas para a fase do preparo
         Metricas metricasPreparo;
         inicializaMetricas(&metricasPreparo);
-        
-        //Usando o quicksort para fazer a ordenacao inicial solicitada
+
+        // Usando o quicksort para fazer a ordenacao inicial solicitada
         metodo3_QuicksortExterno(config, &metricasPreparo);
     }
-    
-    //Situacao 2
-    else if (config->situacao == 2) {
-        //Metricas falsas para a fase do preparo
+
+    // Situacao 2
+    else if (config->situacao == 2)
+    {
+        // Metricas falsas para a fase do preparo
         Metricas metricasPreparo;
         inicializaMetricas(&metricasPreparo);
-        
-        //Ordena crescentemente primeiro
+
+        // Ordena crescentemente primeiro
         metodo3_QuicksortExterno(config, &metricasPreparo);
-        
-        //Inversao
-        FILE *fAsc = fopen("resultado_final.txt", "r");//Arquivo final do quicksort
-        FILE *fDesc = fopen("entrada_atual_desc.txt", "w");//Arquivo que recebera invertido
-        
-        if (fAsc && fDesc) {
+
+        // Inversao
+        FILE *fAsc = fopen("resultado_final.txt", "r");     // Arquivo final do quicksort
+        FILE *fDesc = fopen("entrada_atual_desc.txt", "w"); // Arquivo que recebera invertido
+
+        if (fAsc && fDesc)
+        {
             Registro r;
-            //Le de tras para frente
-            for (int i = config->qnt_registros - 1; i >= 0; i--) {
+            // Le de tras para frente
+            for (int i = config->qnt_registros - 1; i >= 0; i--)
+            {
                 fseek(fAsc, (long)i * 100, SEEK_SET);
-                if (lerRegistroTexto(fAsc, &r, NULL)) {
+                if (lerRegistroTexto(fAsc, &r, NULL))
+                {
                     gravarRegistroTexto(fDesc, &r, NULL);
                 }
             }
         }
-        
-        if (fAsc) fclose(fAsc);
-        if (fDesc) fclose(fDesc);
-        
-        //Troca o nome do arquivo preparado
+
+        if (fAsc)
+            fclose(fAsc);
+        if (fDesc)
+            fclose(fDesc);
+
+        // Troca o nome do arquivo preparado
         remove("entrada_atual.txt");
         rename("entrada_atual_desc.txt", "entrada_atual.txt");
     }
     //-P
-    if (config->p) {
-        //Imprime o arquivo
+    if (config->p)
+    {
+        // Imprime o arquivo
         FILE *fVerificacao = fopen("entrada_atual.txt", "r");
-        if (fVerificacao) {
+        if (fVerificacao)
+        {
             Registro r;
-            while (lerRegistroTexto(fVerificacao, &r, NULL)) {
+            while (lerRegistroTexto(fVerificacao, &r, NULL))
+            {
                 printf("[Preparo Inicial] ");
                 imprimirRegistro(&r);
             }
@@ -370,29 +355,96 @@ bool prepararArquivoInicial(Config *config, Metricas *metricas) {
     return true;
 }
 
-void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
-    //Gravacao no arquivo
+void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas)
+{
+    // Gravacao no arquivo
     //%08ld  : Inscrição
     //%5.1f  : Nota
     //%-2s   : Estado
     //%-50s  : Cidade
     //%-30s  : Curso
-    fprintf(arq, "%08ld %5.1f %-2s %-50s %-30s\n", 
-            reg->inscricao, 
-            reg->nota, 
-            reg->estado, 
-            reg->cidade, 
+    fprintf(arq, "%08ld %5.1f %-2s %-50s %-30s\n",
+            reg->inscricao,
+            reg->nota,
+            reg->estado,
+            reg->cidade,
             reg->curso);
-    if (metricas != NULL) {
+    if (metricas != NULL)
+    {
         metricas->escrita_reg++;
     }
 }
 
-void imprimirRegistro(Registro *reg) {
-    printf("%08ld | Nota: %5.1f | %s | %-20s | %-20s\n", 
-            reg->inscricao, 
-            reg->nota, 
-            reg->estado, 
-            reg->cidade, 
-            reg->curso);
+void imprimirRegistro(Registro *reg)
+{
+    printf("%08ld | Nota: %5.1f | %s | %-20s | %-20s\n",
+           reg->inscricao,
+           reg->nota,
+           reg->estado,
+           reg->cidade,
+           reg->curso);
+}
+
+void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas)
+{
+    int i = esq, j = dir;
+    Registro pivo = vetor[(esq + dir) / 2];
+
+    while (i <= j)
+    {
+        if (metricas)
+            metricas->comparacoes++;
+        while (vetor[i].nota < pivo.nota)
+        {
+            i++;
+            if (metricas)
+                metricas->comparacoes++;
+        }
+        if (metricas)
+            metricas->comparacoes++;
+        while (vetor[j].nota > pivo.nota)
+        {
+            j--;
+            if (metricas)
+                metricas->comparacoes++;
+        }
+        if (i <= j)
+        {
+            Registro temp = vetor[i];
+            vetor[i] = vetor[j];
+            vetor[j] = temp;
+            i++;
+            j--;
+        }
+    }
+    if (esq < j)
+        quicksortInterno(vetor, esq, j, metricas);
+    if (i < dir)
+        quicksortInterno(vetor, i, dir, metricas);
+}
+
+void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas)
+{
+    for (int i = 1; i < tamanho; i++)
+    {
+        RegFita chave = vetor[i];
+        int j = i - 1;
+
+        while (j >= 0)
+        {
+            if (metricas)
+                metricas->comparacoes++;
+            // Ordena crescentemente pela nota
+            if (vetor[j].reg.nota > chave.reg.nota)
+            {
+                vetor[j + 1] = vetor[j];
+                j--;
+            }
+            else
+            {
+                break;
+            }
+        }
+        vetor[j + 1] = chave;
+    }
 }
