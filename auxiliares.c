@@ -92,22 +92,6 @@ void printMetricas(Metricas metricas)
     printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
 }
 
-int *criaVetor(int tamanho)
-{
-    int *vetor = (int *)malloc(sizeof(int) * tamanho);
-    if (!vetor)
-    {
-        printf("Erro ao alocar memória para o vetor.\n");
-        exit(1);
-    }
-    return vetor;
-}
-
-void destroiVetor(int *vet)
-{
-    free(vet);
-}
-
 bool compararNos(NoHeap a, NoHeap b)
 {
     if (a.marcado != b.marcado) // se os dois forem marcados, fala qual é o maior, se nao fala o marcaddo

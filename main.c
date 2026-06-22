@@ -73,10 +73,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-
-// verificar metricas de todos os metodos
-// verificar vazamento de memoria
-// verificar se precisa de ordenar os arquivos de mais de uma forma
-// gravar da fita final pra uma nova fita de saida é a melhor opcao? e se so alterarmos os nomes e caminhos
-// o metodo 2 está com muitas comparacoes

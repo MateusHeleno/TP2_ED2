@@ -227,26 +227,12 @@ void intercalacaoSS(Config *config, Metricas *metricas)
 
         if (blocos_gerados <= 1) // caso so tenha um bloco a ordenacao acabou
         {
-            ordenado = true; // marca a flag
-            sprintf(nomeFita, "fitas/fita%02d.txt", saida_base); // o arquivo ordenado esta na saida base
+            ordenado = true;
+            sprintf(nomeFita, "fitas/fita%02d.txt", saida_base);
 
-            // grava da fita atual para a fita de saida final
-            FILE *f_final_in = fopen(nomeFita, "r");
-            FILE *f_final_out = fopen("resultado_final.txt", "w");
-            if (f_final_in && f_final_out)
-            {
-                Registro r;
-                while (lerRegistroTexto(f_final_in, &r, NULL))
-                {
-                    gravarRegistroTexto(f_final_out, &r, NULL);
-                }
-            }
-
-            // fecha as fitas
-            if (f_final_in)
-                fclose(f_final_in);
-            if (f_final_out)
-                fclose(f_final_out);
+            // Deleta o resultado final antigo (se houver) e renomeia a fita vencedora
+            remove("resultado_final.txt"); 
+            rename(nomeFita, "resultado_final.txt");
         }
         else
         {

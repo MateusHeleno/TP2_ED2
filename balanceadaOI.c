@@ -55,7 +55,7 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
 
 void intercalacaoOI(Config *config, Metricas *metricas)
 {
-    gerarBlocosOrdenadosOI("entradaAtual.txt", config->qnt_registros, metricas); // pre-processamento
+    gerarBlocosOrdenadosOI("entrada_atual.txt", config->qnt_registros, metricas); // pre-processamento
 
     // variaveis para controle das fitas
     int entradaBase = 0;
@@ -168,23 +168,15 @@ void intercalacaoOI(Config *config, Metricas *metricas)
 
         if (blocos_gerados <= 1) // se um unico bloco for gerado
         {
-            ordenado = true; // marca a flag de ordenado
-            sprintf(nomeFita, "fitas/fita%02d.txt", saidaBase);
-
-            FILE *fFinalIn = fopen(nomeFita, "r");
-            FILE *fFinalOut = fopen("resultado_final.txt", "w");
-            if (fFinalIn && fFinalOut)
+            if (blocos_gerados <= 1)
             {
-                Registro r;
-                while (lerRegistroTexto(fFinalIn, &r, NULL))
-                {
-                    gravarRegistroTexto(fFinalOut, &r, NULL);
-                }
+                ordenado = true;
+                sprintf(nomeFita, "fitas/fita%02d.txt", saidaBase);
+
+                // Deleta o resultado final antigo (se houver) e renomeia a fita vencedora
+                remove("resultado_final.txt");
+                rename(nomeFita, "resultado_final.txt");
             }
-            if (fFinalIn)
-                fclose(fFinalIn);
-            if (fFinalOut)
-                fclose(fFinalOut);
         }
         else
         {
