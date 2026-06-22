@@ -6,17 +6,20 @@
 #include "auxiliares.h"
 #include "quicksort.h"
 #include "balanceadaOI.h"
-// #include "polifasica.h"
+#include "intercalacaoSS.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     Config config;
-    if (!validaEntrada(argc, argv, &config)) {
+    if (!validaEntrada(argc, argv, &config))
+    {
         return 1;
     }
     Metricas metricas;
     inicializaMetricas(&metricas);
     printf("Preparando o arquivo de entrada...\n");
-    if (!prepararArquivoInicial(&config, &metricas)) {
+    if (!prepararArquivoInicial(&config, &metricas))
+    {
         printf("\n[ERRO FATAL] Falha na preparacao do arquivo 'entrada_atual.txt'.\n");
         printf("-> Verifique se o arquivo original esta na mesma pasta e se chama EXATAMENTE 'PROVAO.TXT' (tudo maiusculo).\n");
         return 1;
@@ -24,40 +27,44 @@ int main(int argc, char *argv[]) {
     printf("Arquivo preparado com sucesso!\n\n");
     clock_t inicio_relogio, fim_relogio;
     inicio_relogio = clock();
-    switch (config.metodo) {
-        case 1:
-            printf("Iniciando o Metodo 1: Intercalacao Balanceada...\n");
-            intercalacaoOI(&config, &metricas);
-            printf("Ainda nao implementado no main.\n");
-            break;
+    switch (config.metodo)
+    {
+    case 1:
+        printf("Iniciando o Metodo 1: Intercalacao Balanceada...\n");
+        intercalacaoOI(&config, &metricas);
+        break;
 
-        case 2:
-            printf("Iniciando o Metodo 2: Selecao por Substituicao...\n");
-            // metodo2_SelecaoSubstituicao(&config, &metricas);
-            printf("Ainda nao implementado no main.\n");
-            break;
+    case 2:
+        printf("Iniciando o Metodo 2: Selecao por Substituicao...\n");
+        intercalacaoSS(&config, &metricas);
+        break;
 
-        case 3:
-            printf("Iniciando o Metodo 3: Quicksort Externo...\n");
-            metodo3_QuicksortExterno(&config, &metricas);
-            break;
+    case 3:
+        printf("Iniciando o Metodo 3: Quicksort Externo...\n");
+        metodo3_QuicksortExterno(&config, &metricas);
+        break;
 
-        default:
-            printf("Metodo invalido escolhido.\n");
-            return 1;
+    default:
+        printf("Metodo invalido escolhido.\n");
+        return 1;
     }
     fim_relogio = clock();
     metricas.tempo = (double)(fim_relogio - inicio_relogio) / CLOCKS_PER_SEC;
-    if (config.p) {
+    if (config.p)
+    {
         printf("\n================ ARQUIVO ORDENADO (-P) ================\n");
         FILE *resultado = fopen("resultado_final.txt", "r");
-        if (resultado) {
+        if (resultado)
+        {
             Registro reg;
-            while (lerRegistroTexto(resultado, &reg, NULL)) {
+            while (lerRegistroTexto(resultado, &reg, NULL))
+            {
                 imprimirRegistro(&reg);
             }
             fclose(resultado);
-        } else {
+        }
+        else
+        {
             printf("Aviso: Arquivo 'resultado_final.txt' nao foi encontrado para impressao.\n");
         }
         printf("========================================================\n");
@@ -66,3 +73,10 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
+// verificar metricas de todos os metodos
+// verificar vazamento de memoria
+// verificar se precisa de ordenar os arquivos de mais de uma forma
+// gravar da fita final pra uma nova fita de saida é a melhor opcao? e se so alterarmos os nomes e caminhos
+// o metodo 2 está com muitas comparacoes
