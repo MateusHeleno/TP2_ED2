@@ -6,27 +6,29 @@
 typedef struct
 {
     long int inscricao;
-    float nota;         
-    char estado[3];   
-    char cidade[51];   
-    char curso[31];    
+    float nota;
+    char estado[3];
+    char cidade[51];
+    char curso[31];
 } Registro;
 
-typedef struct{
+typedef struct
+{
     int metodo;
     int qnt_registros;
     int situacao;
     bool p;
 } Config;
 
-typedef struct{
+typedef struct
+{
     int ler_reg;
     int escrita_reg;
     int comparacoes;
     double tempo;
 } Metricas;
 
-//heap generico
+// heap generico
 typedef struct
 {
     Registro reg;
@@ -40,16 +42,15 @@ typedef struct
     int tamanho;
 } MinHeap;
 
-typedef struct {
+typedef struct
+{
     Registro reg;
     int fita_origem;
 } RegFita;
 
-bool validaEntrada(int argc, char *argv[],Config *config);
+bool validaEntrada(int argc, char *argv[], Config *config);
 void inicializaMetricas(Metricas *metricas);
 void printMetricas(Metricas metricas);
-int* criaVetor(int tamanho);
-void destroiVetor(int *vet);
 
 bool compararNos(NoHeap a, NoHeap b);
 void trocarNos(NoHeap *a, NoHeap *b);

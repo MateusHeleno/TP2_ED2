@@ -216,7 +216,7 @@ void intercalacaoSS(Config *config, Metricas *metricas)
             saidaAtual = (saidaAtual + 1) % 20; // passa a saida pra prox fita
         }
 
-        //fecha todas as fitas
+        // fecha todas as fitas
         for (int i = 0; i < 20; i++)
         {
             if (fitas_in[i])
@@ -231,7 +231,7 @@ void intercalacaoSS(Config *config, Metricas *metricas)
             sprintf(nomeFita, "fitas/fita%02d.txt", saida_base);
 
             // Deleta o resultado final antigo (se houver) e renomeia a fita vencedora
-            remove("resultado_final.txt"); 
+            remove("resultado_final.txt");
             rename(nomeFita, "resultado_final.txt");
         }
         else

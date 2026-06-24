@@ -52,7 +52,7 @@ void quicksortExternoRec(FILE *arq, int esq, int dir, Metricas *metricas)
         }
 
         // ordena usando o quicksort interno da auxiliares.c
-        quicksortInterno(area, 0, TAM_MEMORIA - 1, metricas);
+        quicksortInterno(area, 0, qtd - 1, metricas);
 
         for (int k = 0; k < qtd; k++)
         {
