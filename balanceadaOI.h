@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include "auxiliares.h"
 
-#defineTAM_RAM20
+#define TAM_RAM 20
+#define TAM_FITAS 40
 
 void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *metricas);
 void intercalacaoOI(Config *config, Metricas *metricas);

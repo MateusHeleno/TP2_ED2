@@ -4,9 +4,7 @@
 #include "intercalacaoSS.h"
 
 // fase de pre-processamento gera blocos de tamanhos variados nas fitas
-void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
-                                     int quantidade,
-                                     Metricas *metricas)
+void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,int quantidade,Metricas *metricas)
 {
     FILE *arqEntrada = fopen(nomeArquivo, "rb");
 
@@ -16,9 +14,9 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
         return;
     }
 
-    FILE *fitas[40];
+    FILE *fitas[TAM_FITAS];
 
-    if (!abrirFitas(fitas, 0, 20, "wb"))
+    if (!abrirFitas(fitas, 0, (TAM_FITAS / 2), "wb"))
     {
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
@@ -31,13 +29,9 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
     int lidos_total = 0;
 
     // preenche o heap inicial
-    while (heap.tamanho < 20 &&
-           lidos_total < quantidade)
+    while (heap.tamanho < TAM_RAM && lidos_total < quantidade)
     {
-        if (lerRegistroBinario(
-                arqEntrada,
-                &heap.dados[heap.tamanho].reg,
-                metricas))
+        if (lerRegistroBinario(arqEntrada,&heap.dados[heap.tamanho].reg,metricas))
         {
             heap.dados[heap.tamanho].fita_origem = 0;
             heap.dados[heap.tamanho].marcado = false;
@@ -60,19 +54,12 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
         // menor elemento da run atual
         NoHeap menor = heap.dados[0];
 
-        gravarRegistroBinario(
-            fitas[fita_atual],
-            &menor.reg,
-            metricas
-        );
+        gravarRegistroBinario(fitas[fita_atual],&menor.reg,metricas);
 
         Registro proximo;
 
         if (lidos_total < quantidade &&
-            lerRegistroBinario(
-                arqEntrada,
-                &proximo,
-                metricas))
+            lerRegistroBinario(arqEntrada,&proximo,metricas))
         {
             lidos_total++;
 
@@ -86,14 +73,9 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
 
             // se for menor que o último removido,
             // pertence à próxima run
-            novoNo.marcado =
-                (proximo.nota < menor.reg.nota);
+            novoNo.marcado = (proximo.nota < menor.reg.nota);
 
-            substituirRaiz(
-                &heap,
-                novoNo,
-                metricas
-            );
+            substituirRaiz( &heap,novoNo,metricas);
         }
         else
         {
@@ -101,12 +83,10 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
             removerRaiz(&heap, metricas);
         }
 
-        // todos os elementos restantes pertencem
-        // à próxima run
-        if (heap.tamanho > 0 &&
-            heap.dados[0].marcado)
+        // todos os elementos restantes pertencem a proxima run
+        if (heap.tamanho > 0 && heap.dados[0].marcado)
         {
-            fita_atual = (fita_atual + 1) % 20;
+            fita_atual = (fita_atual + 1) % (TAM_FITAS / 2);
 
             // desmarca todos
             for (int i = 0; i < heap.tamanho; i++)
@@ -118,51 +98,40 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,
         }
     }
 
-    fecharFitas(fitas, 0, 20);
+    fecharFitas(fitas, 0, (TAM_FITAS / 2));
 
     fclose(arqEntrada);
 }
 
 void intercalacaoSS(Config *config, Metricas *metricas)
 {
-    gerarBlocosOrdenadosSubstituicao(
-        "entrada_atual.bin",
-        config->qnt_registros,
-        metricas
-    );
+    gerarBlocosOrdenadosSubstituicao("entrada_atual.bin",config->qnt_registros,metricas);
 
     int entrada_base = 0;
-    int saida_base = 20;
+    int saida_base = (TAM_FITAS / 2);
 
     bool ordenado = false;
 
     char nomeFita[50];
 
-    FILE *fitas_in[20];
-    FILE *fitas_out[20];
+    FILE *fitas_in[(TAM_FITAS / 2)];
+    FILE *fitas_out[(TAM_FITAS / 2)];
 
-    Registro prox_reg[20];
-    bool fita_tem_dado[20];
+    Registro prox_reg[(TAM_FITAS / 2)];
+    bool fita_tem_dado[(TAM_FITAS / 2)];
 
     while (!ordenado)
     {
         // abre as fitas de entrada
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < (TAM_FITAS / 2); i++)
         {
-            sprintf(nomeFita,
-                    "fitas/fita%02d.bin",
-                    entrada_base + i);
+            sprintf(nomeFita,"fitas/fita%02d.bin",entrada_base + i);
 
             fitas_in[i] = fopen(nomeFita, "rb");
 
             if (fitas_in[i])
             {
-                fita_tem_dado[i] =
-                    lerRegistroBinario(
-                        fitas_in[i],
-                        &prox_reg[i],
-                        metricas
-                    );
+                fita_tem_dado[i] =lerRegistroBinario(fitas_in[i],&prox_reg[i],metricas);
             }
             else
             {
@@ -171,11 +140,9 @@ void intercalacaoSS(Config *config, Metricas *metricas)
         }
 
         // abre as fitas de saída
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < (TAM_FITAS / 2); i++)
         {
-            sprintf(nomeFita,
-                    "fitas/fita%02d.bin",
-                    saida_base + i);
+            sprintf(nomeFita,"fitas/fita%02d.bin",saida_base + i);
 
             fitas_out[i] = fopen(nomeFita, "wb");
         }
@@ -189,7 +156,7 @@ void intercalacaoSS(Config *config, Metricas *metricas)
             heap.tamanho = 0;
 
             // coloca o primeiro registro de cada fita
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < (TAM_FITAS / 2); i++)
             {
                 if (fita_tem_dado[i])
                 {
@@ -210,69 +177,37 @@ void intercalacaoSS(Config *config, Metricas *metricas)
 
             blocos_gerados++;
 
-            float ultima_nota = -1.0f;
-
             while (heap.tamanho > 0)
             {
                 NoHeap menor = heap.dados[0];
-
                 int f = menor.fita_origem;
 
-                gravarRegistroBinario(
-                    fitas_out[saidaAtual],
-                    &menor.reg,
-                    metricas
-                );
+                gravarRegistroBinario(fitas_out[saidaAtual],&menor.reg,metricas);
 
-                ultima_nota = menor.reg.nota;
+                // Lê o próximo elemento da mesma fita que originou o menor
+                fita_tem_dado[f] = lerRegistroBinario(fitas_in[f],&prox_reg[f],metricas);
 
-                fita_tem_dado[f] =
-                    lerRegistroBinario(
-                        fitas_in[f],
-                        &prox_reg[f],
-                        metricas
-                    );
-
+                // Se a fita ainda tem dados, o registro ENTRA DIRETO na heap
                 if (fita_tem_dado[f])
                 {
-                    metricas->comparacoes++;
+                    NoHeap novoNo;
+                    novoNo.reg = prox_reg[f];
+                    novoNo.fita_origem = f;
+                    novoNo.marcado = false; // Na intercalação ninguém é marcado
 
-                    if (prox_reg[f].nota >= ultima_nota)
-                    {
-                        NoHeap novoNo;
-
-                        novoNo.reg = prox_reg[f];
-                        novoNo.fita_origem = f;
-                        novoNo.marcado = false;
-
-                        substituirRaiz(
-                            &heap,
-                            novoNo,
-                            metricas
-                        );
-                    }
-                    else
-                    {
-                        removerRaiz(
-                            &heap,
-                            metricas
-                        );
-                    }
+                    substituirRaiz(&heap,novoNo,metricas);
                 }
                 else
                 {
-                    removerRaiz(
-                        &heap,
-                        metricas
-                    );
+                    removerRaiz(&heap,metricas);
                 }
             }
 
-            saidaAtual = (saidaAtual + 1) % 20;
+            saidaAtual = (saidaAtual + 1) % (TAM_FITAS / 2);
         }
 
         // fecha as fitas
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < (TAM_FITAS / 2); i++)
         {
             if (fitas_in[i])
                 fclose(fitas_in[i]);
@@ -285,13 +220,10 @@ void intercalacaoSS(Config *config, Metricas *metricas)
         {
             ordenado = true;
 
-            sprintf(nomeFita,
-                    "fitas/fita%02d.bin",
-                    saida_base);
+            sprintf(nomeFita,"fitas/fita%02d.bin",saida_base);
 
             remove("resultado_final.bin");
-            rename(nomeFita,
-                   "resultado_final.bin");
+            rename(nomeFita,"resultado_final.bin");
         }
         else
         {

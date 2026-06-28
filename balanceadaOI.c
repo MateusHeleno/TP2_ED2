@@ -12,7 +12,7 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
         return;
     }
 
-    FILE *fitas[40]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
+    FILE *fitas[TAM_FITAS]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
 
     if (!abrirFitas(fitas, 0, TAM_RAM, "w")) // tenta abrir as fitas de entrada
     {
@@ -62,14 +62,14 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     int entradaBase = 0;
     int saidaBase = 20;
 
-    int tamanhoBlocoAtual = 20;
+    int tamanhoBlocoAtual = TAM_RAM
 
-    bool ordenado = false;
+        bool ordenado = false;
 
     char nomeFita[50];
 
-    FILE *fitasIn[20];
-    FILE *fitasOut[20];
+    FILE *fitasIn[(TAM_FITA / 2)];
+    FILE *fitasOut[(TAM_FITA / 2)];
 
     Registro prox_reg[20];
     bool fitaTemDado[20];
@@ -77,7 +77,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     while (!ordenado)
     {
         // abre fitas de entrada
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < (TAM_FITA / 2); i++)
         {
             sprintf(nomeFita,
                     "fitas/fita%02d.bin",
@@ -101,7 +101,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
         }
 
         // abre fitas de saída
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < (TAM_FITA / 2); i++)
         {
             sprintf(nomeFita,
                     "fitas/fita%02d.bin",
