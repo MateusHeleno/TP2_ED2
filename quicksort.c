@@ -5,187 +5,158 @@
 #include "auxiliares.h"
 #include "quicksort.h"
 
-// Tamanho do registro
+// Tamanho do registro e da memória
 #define TAM_REGISTRO_TXT 100
 #define TAM_MEMORIA 20
 
-bool lerRegistroNaPosicao(FILE *arq, Registro *reg, int pos, Metricas *metricas)
-{
-    if (fseek(arq, (long)pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
+bool lerRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
+    if (fseek(arq, pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
         return false;
+
     return lerRegistroTexto(arq, reg, metricas);
 }
 
-bool gravarRegistroNaPosicao(FILE *arq, Registro *reg, int pos, Metricas *metricas)
-{
-    if (fseek(arq, (long)pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
+bool gravarRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
+    if (fseek(arq, pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
         return false;
+
     gravarRegistroTexto(arq, reg, metricas);
     return true;
 }
 
-int compararRegistros(const void *a, const void *b)
-{
-    float notaA = ((Registro *)a)->nota;
-    float notaB = ((Registro *)b)->nota;
-    if (notaA < notaB)
-        return -1;
-    if (notaA > notaB)
-        return 1;
-    return 0;
+// Insere mantendo a área ordenada (RAM) para o pivô
+void inserirAreaOrdenada(Registro area[], int *qtd, Registro *reg, Metricas *metricas) {
+    int i = *qtd - 1;
+    while (i >= 0) {
+        if (metricas) metricas->comparacoes++;
+        if (area[i].nota > reg->nota) {
+            area[i + 1] = area[i];
+            i--;
+        } else {
+            break;
+        }
+    }
+    area[i + 1] = *reg;
+    (*qtd)++;
 }
 
-void quicksortExternoRec(FILE *arq, int esq, int dir, Metricas *metricas)
-{
+void particao(FILE *arq, int esq, int dir, int *i, int *j, Metricas *metricas) {
+    int li = esq, ei = esq;
+    int ls = dir, es = dir;
+
+    int nrarea = 0;
+    double linf = -1.0; // Equivalente ao -infinito para notas
+    double lsup = 101.0; // Equivalente ao +infinito para notas
+
+    Registro area[TAM_MEMORIA];
+    Registro ultLido;
+    bool ondeLer = true; // true = Ler Inferior, false = Ler Superior
+
+    *i = esq - 1;
+    *j = dir + 1;
+
+    while (ls >= li) {
+        // Fase inicial: Preenche a área (pivô) com os primeiros TAM_MEMORIA - 1 elementos
+        if (nrarea < TAM_MEMORIA - 1) {
+            if (ondeLer) {
+                lerRegistroNaPosicao(arq, &ultLido, li, metricas);
+                li++; ondeLer = false;
+            } else {
+                lerRegistroNaPosicao(arq, &ultLido, ls, metricas);
+                ls--; ondeLer = true;
+            }
+            inserirAreaOrdenada(area, &nrarea, &ultLido, metricas);
+            continue;
+        }
+
+        // Evita que ponteiros de escrita interceptem/atropelem os de leitura
+        if (ls == es) {
+            lerRegistroNaPosicao(arq, &ultLido, ls, metricas);
+            ls--; ondeLer = true;
+        } else if (li == ei) {
+            lerRegistroNaPosicao(arq, &ultLido, li, metricas);
+            li++; ondeLer = false;
+        } else if (ondeLer) {
+            lerRegistroNaPosicao(arq, &ultLido, li, metricas);
+            li++; ondeLer = false;
+        } else {
+            lerRegistroNaPosicao(arq, &ultLido, ls, metricas);
+            ls--; ondeLer = true;
+        }
+
+        // Avalia onde alocar o registro baseado nos limites do pivô (área)
+        if (metricas) metricas->comparacoes++;
+        if (ultLido.nota > lsup) {
+            *j = es;
+            gravarRegistroNaPosicao(arq, &ultLido, es, metricas);
+            es--;
+        }
+        else if (ultLido.nota < linf) {
+            *i = ei;
+            gravarRegistroNaPosicao(arq, &ultLido, ei, metricas);
+            ei++;
+        }
+        else {
+            // Se cair no meio, entra no pivô (área) e expulsa o extremo para balancear as partições
+            inserirAreaOrdenada(area, &nrarea, &ultLido, metricas);
+
+            int t1 = ei - esq;
+            int t2 = dir - es;
+
+            if (t1 < t2) { // Partição inferior menor -> expulsa o mínimo
+                *i = ei;
+                gravarRegistroNaPosicao(arq, &area[0], ei, metricas);
+                linf = area[0].nota;
+                ei++;
+                // Shift para remover o primeiro item da área
+                for (int k = 0; k < nrarea - 1; k++) area[k] = area[k + 1];
+                nrarea--;
+            } else { // Partição superior menor ou igual -> expulsa o máximo
+                *j = es;
+                gravarRegistroNaPosicao(arq, &area[nrarea - 1], es, metricas);
+                lsup = area[nrarea - 1].nota;
+                es--;
+                nrarea--;
+            }
+        }
+    }
+
+    // Descarrega o pivô que restou ordenado na RAM de volta para o meio do arquivo
+    while (ei <= es) {
+        gravarRegistroNaPosicao(arq, &area[0], ei, metricas);
+        ei++;
+        for (int k = 0; k < nrarea - 1; k++) area[k] = area[k + 1];
+        nrarea--;
+    }
+}
+
+void quickSortExternoRec(FILE* arq, int esq, int dir, Metricas *metricas) {
     if (dir - esq < 1)
         return;
 
-    // Se o tamanho do arquivo for menor que o tamanho ordenamos tudo na memória
-    if (dir - esq + 1 <= TAM_MEMORIA)
-    {
-        Registro area[TAM_MEMORIA];
-        int qtd = dir - esq + 1;
+    int i, j;
+    particao(arq, esq, dir, &i, &j, metricas);
 
-        for (int k = 0; k < qtd; k++)
-        {
-            lerRegistroNaPosicao(arq, &area[k], esq + k, metricas);
-        }
-
-        // ordena usando o quicksort interno da auxiliares.c
-        quicksortInterno(area, 0, qtd - 1, metricas);
-
-        for (int k = 0; k < qtd; k++)
-        {
-            gravarRegistroNaPosicao(arq, &area[k], esq + k, metricas);
-        }
-        return;
+    if (i - esq < dir - j) {
+        quickSortExternoRec(arq, esq, i, metricas);
+        quickSortExternoRec(arq, j, dir, metricas);
     }
-
-    Registro area[TAM_MEMORIA];
-    int leiInf = esq, escInf = esq, leiSup = dir, escSup = dir;
-
-    for (int k = 0; k < TAM_MEMORIA; k++)
-    {
-        lerRegistroNaPosicao(arq, &area[k], leiSup, metricas);
-        leiSup--;
+    else {
+        quickSortExternoRec(arq, j, dir, metricas);
+        quickSortExternoRec(arq, esq, i, metricas);
     }
-
-    // Ordena os 20 registros na RAM
-    quicksortInterno(area, 0, TAM_MEMORIA - 1, metricas);
-
-    bool saiEsq = true;
-    Registro novo;
-
-    // Le o restante do arquivo da esquerda para a direita
-    while (leiInf <= leiSup)
-    {
-        lerRegistroNaPosicao(arq, &novo, leiInf, metricas);
-        leiInf++;
-
-        if (metricas)
-            metricas->comparacoes++;
-
-        // Se a nota for menor que o menor da area, vai para a particao esquerda
-        if (novo.nota < area[0].nota)
-        {
-            gravarRegistroNaPosicao(arq, &novo, escInf, metricas);
-            escInf++;
-        }
-        else
-        {
-            if (metricas)
-                metricas->comparacoes++;
-            // Se a nota for maior que o maior da area, vai para a partição direita
-            if (novo.nota > area[TAM_MEMORIA - 1].nota)
-            {
-                gravarRegistroNaPosicao(arq, &novo, escSup, metricas);
-                escSup--;
-            }
-            else
-            {
-                if (saiEsq)
-                {
-                    // Expulsa o menor registro para o disco
-                    gravarRegistroNaPosicao(arq, &area[0], escInf, metricas);
-                    escInf++;
-                    area[0] = novo; // O novo registro entra
-
-                    for (int k = 0; k < TAM_MEMORIA - 1; k++)
-                    {
-                        if (metricas)
-                            metricas->comparacoes++;
-                        if (area[k].nota > area[k + 1].nota)
-                        {
-                            Registro tmp = area[k];
-                            area[k] = area[k + 1];
-                            area[k + 1] = tmp;
-                        }
-                        else
-                            break;
-                    }
-                    saiEsq = false; // Expulsa pela direita
-                }
-                else
-                {
-                    // Expulsa o maior registro para o disco
-                    gravarRegistroNaPosicao(arq, &area[TAM_MEMORIA - 1], escSup, metricas);
-                    escSup--;
-                    area[TAM_MEMORIA - 1] = novo; // O novo registro entra
-
-                    for (int k = TAM_MEMORIA - 1; k > 0; k--)
-                    {
-                        if (metricas)
-                            metricas->comparacoes++;
-                        if (area[k].nota < area[k - 1].nota)
-                        {
-                            Registro tmp = area[k];
-                            area[k] = area[k - 1];
-                            area[k - 1] = tmp;
-                        }
-                        else
-                            break;
-                    }
-                    saiEsq = true; // Expulsa pela esquerda
-                }
-            }
-        }
-    }
-
-    // Joga o restante que esta na RAM para o centro
-    for (int k = 0; k < TAM_MEMORIA; k++)
-    {
-        gravarRegistroNaPosicao(arq, &area[k], escInf + k, metricas);
-    }
-    quicksortExternoRec(arq, esq, escInf - 1, metricas);
-    quicksortExternoRec(arq, escSup + 1, dir, metricas);
 }
 
-void metodo3_QuicksortExterno(Config *config, Metricas *metricas)
-{
-    FILE *arq = fopen("entrada_atual.txt", "r+");
-    if (!arq)
-    {
-        printf("Erro: Nao foi possivel abrir o arquivo de trabalho para o Quicksort Externo.\n");
+/*
+    Ele vai ler os registros contidos no arquivo `arq` passado por parâmetro
+    e a partir dele gerar o arquivo final ordenado
+*/
+void quicksortExterno(Config *config, Metricas *metricas, FILE *arq) {
+    FILE *arq = fopen(arq, "rb+");
+    if (!arq) {
+        printf("Nao foi possivel abrir o arquivo de leitura para o Quicksort Externo.\n");
         return;
     }
 
-    quicksortExternoRec(arq, 0, config->qnt_registros - 1, metricas);
-    fclose(arq);
-
-    FILE *origem = fopen("entrada_atual.txt", "r");
-    FILE *destino = fopen("resultado_final.txt", "w");
-
-    if (origem && destino)
-    {
-        Registro r;
-        while (lerRegistroTexto(origem, &r, NULL))
-        {
-            gravarRegistroTexto(destino, &r, NULL);
-        }
-    }
-
-    if (origem)
-        fclose(origem);
-    if (destino)
-        fclose(destino);
+    quickSortExternoRec(arq, 0, config->qnt_registros - 1, metricas);
 }

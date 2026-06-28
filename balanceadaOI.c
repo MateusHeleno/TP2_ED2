@@ -12,16 +12,16 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
         return;
     }
 
-    FILE *fitas[40]; // gera as 40 fitas - 20 de entrada e 20 de saida
+    FILE *fitas[40]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
 
-    if (!abrirFitas(fitas, 0, 20, "w")) // tenta abrir as fitas de entrada
+    if (!abrirFitas(fitas, 0, TAM_RAM, "w")) // tenta abrir as fitas de entrada
     {
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
         return;
     }
 
-    Registro memoria[20]; // vetor de 20 reg do tamanho da memoria
+    Registro memoria[TAM_RAM]; // vetor de TAM_RAM reg do tamanho da memoria
     int lidosTotal = 0;
     int fitaAtual = 0;
 
@@ -29,8 +29,8 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
     {
         int lidosBloco = 0;
 
-        // para ler um bloco de 20 reg
-        while (lidosBloco < 20 && lidosTotal < quantidade && lerRegistroTexto(arqEntrada, &memoria[lidosBloco], metricas))
+        // para ler um bloco de TAM_RAM reg
+        while (lidosBloco < TAM_RAM && lidosTotal < quantidade && lerRegistroTexto(arqEntrada, &memoria[lidosBloco], metricas))
         {
             lidosBloco++;
             lidosTotal++;
@@ -45,23 +45,28 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
                 gravarRegistroTexto(fitas[fitaAtual], &memoria[i], metricas);
             }
 
-            fitaAtual = (fitaAtual + 1) % 20;
+            fitaAtual = (fitaAtual + 1) % TAM_RAM;
         }
     }
 
-    fecharFitas(fitas, 0, 20);
+    fecharFitas(fitas, 0, TAM_RAM);
     fclose(arqEntrada);
 }
 
 void intercalacaoOI(Config *config, Metricas *metricas)
 {
-    gerarBlocosOrdenadosOI("entrada_atual.txt", config->qnt_registros, metricas); // pre-processamento
+    gerarBlocosOrdenadosOI("entrada_atual.bin",
+                           config->qnt_registros,
+                           metricas);
 
-    // variaveis para controle das fitas
     int entradaBase = 0;
     int saidaBase = 20;
+
+    int tamanhoBlocoAtual = 20;
+
     bool ordenado = false;
-    char nomeFita[30];
+
+    char nomeFita[50];
 
     FILE *fitasIn[20];
     FILE *fitasOut[20];
@@ -69,17 +74,25 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     Registro prox_reg[20];
     bool fitaTemDado[20];
 
-    // intercala até todo o arquivo estar em um unico bloco
     while (!ordenado)
     {
-        // abre as fitas para a leitura
+        // abre fitas de entrada
         for (int i = 0; i < 20; i++)
         {
-            sprintf(nomeFita, "fitas/fita%02d.txt", entradaBase + i);
-            fitasIn[i] = fopen(nomeFita, "r");
-            if (fitasIn[i]) // marca se tem itens nas fitas
+            sprintf(nomeFita,
+                    "fitas/fita%02d.bin",
+                    entradaBase + i);
+
+            fitasIn[i] = fopen(nomeFita, "rb");
+
+            if (fitasIn[i])
             {
-                fitaTemDado[i] = lerRegistroTexto(fitasIn[i], &prox_reg[i], metricas);
+                fitaTemDado[i] =
+                    lerRegistroBinario(
+                        fitasIn[i],
+                        &prox_reg[i],
+                        metricas
+                    );
             }
             else
             {
@@ -87,103 +100,132 @@ void intercalacaoOI(Config *config, Metricas *metricas)
             }
         }
 
-        // abre as fitas de escrita
+        // abre fitas de saída
         for (int i = 0; i < 20; i++)
         {
-            sprintf(nomeFita, "fitas/fita%02d.txt", saidaBase + i);
-            fitasOut[i] = fopen(nomeFita, "w");
+            sprintf(nomeFita,
+                    "fitas/fita%02d.bin",
+                    saidaBase + i);
+
+            fitasOut[i] = fopen(nomeFita, "wb");
         }
 
-        int blocos_gerados = 0;
-        int saidaAtual = 0; // marca qual e a fita de saida atual
+        int blocosGerados = 0;
+        int saidaAtual = 0;
 
         while (1)
         {
-            int num_ativas = 0;
-            RegFita ativas[20]; // vetor para a ordenacao interna dos registros das fitas
+            MinHeap heap;
+            heap.tamanho = 0;
 
-            // preenche o vetor com o primeiro reg de cada fita
+            int lidosBloco[20] = {0};
+
+            // coloca um registro de cada bloco no heap
             for (int i = 0; i < 20; i++)
             {
                 if (fitaTemDado[i])
                 {
-                    ativas[num_ativas].reg = prox_reg[i];
-                    ativas[num_ativas].fita_origem = i;
-                    num_ativas++;
+                    NoHeap no;
+
+                    no.reg = prox_reg[i];
+                    no.fita_origem = i;
+                    no.marcado = false;
+
+                    heap.dados[heap.tamanho++] = no;
+
+                    lidosBloco[i] = 1;
+
+                    fitaTemDado[i] =
+                        lerRegistroBinario(
+                            fitasIn[i],
+                            &prox_reg[i],
+                            metricas
+                        );
                 }
             }
 
-            if (num_ativas == 0)
+            if (heap.tamanho == 0)
                 break;
 
-            // aplica o insertion sort interno
-            insertionSortFitas(ativas, num_ativas, metricas);
-            blocos_gerados++;
-            float ultimaNota = -1.0;
+            construirMinHeap(&heap, metricas);
 
-            while (num_ativas > 0)
+            blocosGerados++;
+
+            while (heap.tamanho > 0)
             {
-                RegFita menor = ativas[0];
-                int origem = menor.fita_origem;
+                NoHeap menor = heap.dados[0];
 
-                gravarRegistroTexto(fitasOut[saidaAtual], &menor.reg, metricas);
-                ultimaNota = menor.reg.nota;
+                int f = menor.fita_origem;
 
-                fitaTemDado[origem] = lerRegistroTexto(fitasIn[origem], &prox_reg[origem], metricas);
+                gravarRegistroBinario(
+                    fitasOut[saidaAtual],
+                    &menor.reg,
+                    metricas
+                );
 
-                // remove o menor e empurra todos os outros pra esquerda
-                for (int i = 0; i < num_ativas - 1; i++)
+                if (lidosBloco[f] < tamanhoBlocoAtual &&
+                    fitaTemDado[f])
                 {
-                    ativas[i] = ativas[i + 1];
+                    NoHeap substituto;
+
+                    substituto.reg = prox_reg[f];
+                    substituto.fita_origem = f;
+                    substituto.marcado = false;
+
+                    substituirRaiz(
+                        &heap,
+                        substituto,
+                        metricas
+                    );
+
+                    lidosBloco[f]++;
+
+                    fitaTemDado[f] =
+                        lerRegistroBinario(
+                            fitasIn[f],
+                            &prox_reg[f],
+                            metricas
+                        );
                 }
-                num_ativas--;
-
-                if (fitaTemDado[origem])
+                else
                 {
-                    if (metricas)
-                        metricas->comparacoes++;
-
-                    // se a nota do aluno for maior que a ultima, insere no vetor e ordena
-                    if (prox_reg[origem].nota >= ultimaNota)
-                    {
-                        ativas[num_ativas].reg = prox_reg[origem];
-                        ativas[num_ativas].fita_origem = origem;
-                        num_ativas++;
-                        insertionSortFitas(ativas, num_ativas, metricas);
-                    }
-                    // se nao ele fica salvo no proximo reg
+                    removerRaiz(&heap, metricas);
                 }
             }
+
             saidaAtual = (saidaAtual + 1) % 20;
         }
 
-        // fecha as fitas
+        // fecha tudo
         for (int i = 0; i < 20; i++)
         {
             if (fitasIn[i])
                 fclose(fitasIn[i]);
+
             if (fitasOut[i])
                 fclose(fitasOut[i]);
         }
 
-        if (blocos_gerados <= 1) // se um unico bloco for gerado
+        if (blocosGerados <= 1)
         {
-            if (blocos_gerados <= 1)
-            {
-                ordenado = true;
-                sprintf(nomeFita, "fitas/fita%02d.txt", saidaBase);
+            ordenado = true;
 
-                // Deleta o resultado final antigo (se houver) e renomeia a fita vencedora
-                remove("resultado_final.txt");
-                rename(nomeFita, "resultado_final.txt");
-            }
+            sprintf(nomeFita,
+                    "fitas/fita%02d.bin",
+                    saidaBase);
+
+            remove("resultado_final.bin");
+            rename(nomeFita,
+                   "resultado_final.bin");
         }
         else
         {
-            // se houver mais de um bloco troca as fitas de entrada e saida
             int temp = entradaBase;
+
             entradaBase = saidaBase;
             saidaBase = temp;
+
+            tamanhoBlocoAtual *= 20;
         }
     }
 }

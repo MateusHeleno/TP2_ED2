@@ -28,20 +28,6 @@ typedef struct
     double tempo;
 } Metricas;
 
-// heap generico
-typedef struct
-{
-    Registro reg;
-    int fita_origem; // usado na intercalação 0 a 19
-    bool marcado;    // usado na seleção por substituição, true se vai para o próximo bloco
-} NoHeap;
-
-typedef struct
-{
-    NoHeap dados[20]; // tamanho máximo da memória interna
-    int tamanho;
-} MinHeap;
-
 typedef struct
 {
     Registro reg;
@@ -50,14 +36,7 @@ typedef struct
 
 bool validaEntrada(int argc, char *argv[], Config *config);
 void inicializaMetricas(Metricas *metricas);
-void printMetricas(Metricas metricas);
-
-bool compararNos(NoHeap a, NoHeap b);
-void trocarNos(NoHeap *a, NoHeap *b);
-void descerNoHeap(MinHeap *heap, int i, Metricas *metricas);
-void construirMinHeap(MinHeap *heap, Metricas *metricas);
-void substituirRaiz(MinHeap *heap, NoHeap novoNo, Metricas *metricas);
-void removerRaiz(MinHeap *heap, Metricas *metricas);
+void printMetricas(Metricas metricas, Config config);
 
 bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo);
 void fecharFitas(FILE *fitas[], int inicio, int fim);
