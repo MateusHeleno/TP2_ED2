@@ -31,17 +31,35 @@ typedef struct {
     int fita_origem;
 } RegFita;
 
+// Config
 bool validaEntrada(int argc, char *argv[], Config *config);
+
+// Metricas
 void inicializaMetricas(Metricas *metricas);
 void printMetricas(Metricas metricas, Config config);
 
-bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo);
-void fecharFitas(FILE *fitas[], int inicio, int fim);
-bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
-bool prepararArquivoInicial(Config *config, Metricas *metricas);
-void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas);
+// Arquivos
+bool arquivoExiste(const char *nome);
+long quantidadeRegistros(FILE *arq);
+FILE *abrirArquivo(const char *nome,const char *modo);
+void criarPastaSeNaoExistir(const char *nome);
+
+// Registros
+bool lerRegistro(FILE *arq,Registro *reg,Metricas *metricas);
+void gravarRegistro(FILE *arq,Registro *reg,Metricas *metricas);
 void imprimirRegistro(Registro *reg);
+
+// Fitas
+bool abrirFitas(FILE *fitas[],int inicio,int fim,const char *modo);
+void fecharFitas(FILE *fitas[],int inicio,int fim);
+
+// Preparação
+bool prepararArquivoInicial(Config *config);
+bool gerarArquivoRandom(const char *origem);
+bool gerarArquivoAscendente();
+bool gerarArquivoDescendente();
+
+//sort
 void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas);
 void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas);
-
 #endif

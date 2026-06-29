@@ -8,7 +8,7 @@
 // gera blocos ordenados de tamanho igual
 void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *metricas)
 {
-    FILE *arqEntrada = fopen(nomeArquivo, "r");
+    FILE *arqEntrada = abrirArquivo(nomeArquivo, "rb");
     if (!arqEntrada)
     {
         printf("Erro ao abrir arquivo base: %s\n", nomeArquivo);
@@ -17,7 +17,7 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
 
     FILE *fitas[TAM_FITAS]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
 
-    if (!abrirFitas(fitas, 0, TAM_RAM, "w")) // tenta abrir as fitas de entrada
+    if (!abrirFitas(fitas, 0, TAM_RAM, "wb")) // tenta abrir as fitas de entrada
     {
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
@@ -33,7 +33,7 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
         int lidosBloco = 0;
 
         // para ler um bloco de TAM_RAM reg
-        while (lidosBloco < TAM_RAM && lidosTotal < quantidade && lerRegistroTexto(arqEntrada, &memoria[lidosBloco], metricas))
+        while (lidosBloco < TAM_RAM && lidosTotal < quantidade && lerRegistro(arqEntrada, &memoria[lidosBloco], metricas))
         {
             lidosBloco++;
             lidosTotal++;
@@ -45,7 +45,7 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
 
             for (int i = 0; i < lidosBloco; i++)
             {
-                gravarRegistroTexto(fitas[fitaAtual], &memoria[i], metricas);
+                gravarRegistro(fitas[fitaAtual], &memoria[i], metricas);
             }
 
             fitaAtual = (fitaAtual + 1) % TAM_RAM;
@@ -58,12 +58,10 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
 
 void intercalacaoOI(Config *config, Metricas *metricas)
 {
-    gerarBlocosOrdenadosOI("entrada_atual.bin",
-                           config->qnt_registros,
-                           metricas);
+    gerarBlocosOrdenadosOI("entrada_atual.bin",config->qnt_registros,metricas);
 
     int entradaBase = 0;
-    int saidaBase = 20;
+    int saidaBase = TAM_FITAS / 2;
 
     int tamanhoBlocoAtual = TAM_RAM;
 
@@ -74,8 +72,8 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     FILE *fitasIn[(TAM_FITAS / 2)];
     FILE *fitasOut[(TAM_FITAS / 2)];
 
-    Registro prox_reg[20];
-    bool fitaTemDado[20];
+    Registro prox_reg[TAM_RAM];
+    bool fitaTemDado[TAM_RAM];
 
     while (!ordenado)
     {
@@ -86,16 +84,12 @@ void intercalacaoOI(Config *config, Metricas *metricas)
                     "fitas/fita%02d.bin",
                     entradaBase + i);
 
-            fitasIn[i] = fopen(nomeFita, "rb");
+            fitasIn[i] = abrirArquivo(nomeFita, "rb");
 
             if (fitasIn[i])
             {
                 fitaTemDado[i] =
-                    lerRegistroBinario(
-                        fitasIn[i],
-                        &prox_reg[i],
-                        metricas
-                    );
+                    lerRegistro(fitasIn[i],&prox_reg[i],metricas);
             }
             else
             {
@@ -110,7 +104,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
                     "fitas/fita%02d.bin",
                     saidaBase + i);
 
-            fitasOut[i] = fopen(nomeFita, "wb");
+            fitasOut[i] = abrirArquivo(nomeFita, "wb");
         }
 
         int blocosGerados = 0;
@@ -121,10 +115,10 @@ void intercalacaoOI(Config *config, Metricas *metricas)
             MinHeap heap;
             heap.tamanho = 0;
 
-            int lidosBloco[20] = {0};
+            int lidosBloco[TAM_RAM] = {0};
 
             // coloca um registro de cada bloco no heap
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < TAM_RAM; i++)
             {
                 if (fitaTemDado[i])
                 {
@@ -139,11 +133,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
                     lidosBloco[i] = 1;
 
                     fitaTemDado[i] =
-                        lerRegistroBinario(
-                            fitasIn[i],
-                            &prox_reg[i],
-                            metricas
-                        );
+                        lerRegistro(fitasIn[i],&prox_reg[i],metricas);
                 }
             }
 
@@ -160,10 +150,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
 
                 int f = menor.fita_origem;
 
-                gravarRegistroBinario(
-                    fitasOut[saidaAtual],
-                    &menor.reg,
-                    metricas
+                gravarRegistro(fitasOut[saidaAtual],&menor.reg,metricas
                 );
 
                 if (lidosBloco[f] < tamanhoBlocoAtual &&
@@ -184,11 +171,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
                     lidosBloco[f]++;
 
                     fitaTemDado[f] =
-                        lerRegistroBinario(
-                            fitasIn[f],
-                            &prox_reg[f],
-                            metricas
-                        );
+                        lerRegistro(fitasIn[f],&prox_reg[f],metricas);
                 }
                 else
                 {
@@ -196,11 +179,11 @@ void intercalacaoOI(Config *config, Metricas *metricas)
                 }
             }
 
-            saidaAtual = (saidaAtual + 1) % 20;
+            saidaAtual = (saidaAtual + 1) % (TAM_FITAS / 2);
         }
 
         // fecha tudo
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < TAM_FITAS / 2; i++)
         {
             if (fitasIn[i])
                 fclose(fitasIn[i]);
@@ -228,7 +211,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
             entradaBase = saidaBase;
             saidaBase = temp;
 
-            tamanhoBlocoAtual *= 20;
+            tamanhoBlocoAtual *= TAM_FITAS / 2;
         }
     }
 }

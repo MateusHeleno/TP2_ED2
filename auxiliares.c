@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "auxiliares.h"
-#include "quicksort.h"
+
 
 // codigo de criacao de uma pasta pras fitas
 #ifdef _WIN32
@@ -84,16 +84,16 @@ void inicializaMetricas(Metricas *metricas)
 void printMetricas(Metricas metricas, Config config) {
     if (config.p) {
         printf("\n================ ARQUIVO ORDENADO (-P) ================\n");
-        FILE *resultado = fopen("resultado_final.txt", "r");
+        FILE *resultado = fopen("resultado_final.bin", "rb");
         if (resultado) {
             Registro reg;
-            while (lerRegistroTexto(resultado, &reg, NULL))
+            while (lerRegistro(resultado, &reg, NULL))
                 imprimirRegistro(&reg);
 
             fclose(resultado);
         }
         else
-            printf("Aviso: Arquivo 'resultado_final.txt' nao foi encontrado para impressao.\n");
+            printf("Aviso: Arquivo 'resultado_final.bin' nao foi encontrado para impressao.\n");
 
         printf("========================================================\n");
     }
@@ -105,29 +105,49 @@ void printMetricas(Metricas metricas, Config config) {
     printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
 }
 
-bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo) {
-    CRIAR_PASTA("fitas");
+bool arquivoExiste(const char *nome)
+{
+    FILE *f = fopen(nome, "rb");
 
-    char nomeFita[30];
-    for (int i = inicio; i < fim; i++)
+    if (f)
     {
-        sprintf(nomeFita, "fitas/fita%02d.txt", i);
-        fitas[i] = fopen(nomeFita, modo);
-        if (!fitas[i])
-            return false;
+        fclose(f);
+        return true;
     }
-    return true;
+
+    return false;
 }
 
-void fecharFitas(FILE *fitas[], int inicio, int fim) {
-    for (int i = inicio; i < fim; i++)
-        if (fitas[i]) {
-            fclose(fitas[i]);
-            fitas[i] = NULL;
-        }
+long quantidadeRegistros(FILE *arq)
+{
+    fseek(arq, 0, SEEK_END);
+
+    long total = ftell(arq) / sizeof(Registro);
+
+    fseek(arq, 0L, SEEK_SET);
+
+    return total;
 }
 
-bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
+FILE *abrirArquivo(const char *nome, const char *modo)
+{
+    FILE *arq = fopen(nome, modo);
+
+    if (!arq)
+    {
+        printf("Erro ao abrir arquivo: %s\n", nome);
+    }
+
+    return arq;
+}
+
+void criarPastaSeNaoExistir(const char *nome)
+{
+    CRIAR_PASTA(nome);
+}
+
+bool lerRegistro(FILE *arq,Registro *reg,Metricas *metricas)
+{
     if (fread(reg, sizeof(Registro), 1, arq) != 1)
         return false;
 
@@ -137,276 +157,227 @@ bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
     return true;
 }
 
-bool prepararArquivoInicial(Config *config, Metricas *metricas) {
-    // const char *arquivoAlvo = "";
-    // if (config->situacao == 1) arquivoAlvo = "arquivos/ascendente.bin";
-    // else if (config->situacao == 2) arquivoAlvo = "arquivos/descendente.bin";
-    // else if (config->situacao == 3) arquivoAlvo = "arquivos/random.bin";
-
-    // FILE *arq = fopen(arquivoAlvo, "rb");
-    // if (arq) {
-    //     fclose(arq);
-    //     return true;
-    // }
-
-    CRIAR_PASTA("arquivos");
-
-    const int TOTAL = 471705;
-
-    if (config->situacao == 3) {
-        FILE *check = fopen("arquivos/random.bin", "rb");
-        if (check) {
-            fclose(check);
-            return true;
-        }
-
-        FILE *origem = fopen("PROVAO.TXT", "r");
-        if (!origem) {
-            printf("PROVAO.TXT nao encontrado.\n");
-            return false;
-        }
-
-        FILE *random = fopen("arquivos/random.bin", "wb");
-        if (!random) {
-            fclose(origem);
-            printf("Erro ao criar random.bin.\n");
-            return false;
-        }
-
-        char linha[150], temp[51];
-        Registro reg;
-
-        while (fgets(linha, sizeof(linha), origem)) {
-            if (strlen(linha) < 99)
-                continue;
-
-            strncpy(temp, linha +  0, 8);
-            temp[8]  = '\0';
-            reg.inscricao = atol(temp);
-            strncpy(temp, linha +  9, 5);
-            temp[5]  = '\0';
-            reg.nota = atof(temp);
-            strncpy(reg.estado, linha + 15, 2);
-            reg.estado[2]  = '\0';
-            strncpy(reg.cidade, linha + 18, 50);
-            reg.cidade[50] = '\0';
-            strncpy(reg.curso,  linha + 69, 30);
-            reg.curso[30]  = '\0';
-
-            fwrite(&reg, sizeof(Registro), 1, random);
-        }
-
-        fclose(origem);
-        fclose(random);
-        return true;
-    }
-
-    // Situações 1 e 2: precisam do random.bin como base
-    FILE *ascend = fopen("arquivos/ascendente.bin", "rb");
-    bool ascExiste = (ascend != NULL);
-    if (ascend)
-        fclose(ascend);
-
-    if (!ascExiste) {
-        // Garante que o random.bin existe antes de ler
-        FILE *random = fopen("arquivos/random.bin", "rb");
-        if (!random) {
-            printf("random.bin nao encontrado. Execute na situacao 3 primeiro.\n");
-            return false;
-        }
-
-        fseek(random, 0, SEEK_END);
-        long totalNoArquivo = ftell(random) / sizeof(Registro);
-        rewind(random);
-
-        Registro *vetor = malloc(totalNoArquivo * sizeof(Registro));
-        if (!vetor) {
-            fclose(random);
-            printf("Memoria insuficiente.\n");
-            return false;
-        }
-
-        fread(vetor, sizeof(Registro), totalNoArquivo, random);
-        fclose(random);
-
-        Metricas fake;
-        inicializaMetricas(&fake);
-        quicksortInterno(vetor, 0, totalNoArquivo - 1, &fake);
-
-        FILE *fAsc = fopen("arquivos/ascendente.bin", "wb");
-        if (!fAsc) {
-            free(vetor);
-            return false;
-        }
-
-        fwrite(vetor, sizeof(Registro), totalNoArquivo, fAsc);
-        fclose(fAsc);
-        free(vetor);
-    }
-
-    if (config->situacao == 1)
-        return true;
-
-    // Situação 2: ascendente.bin → descendente.bin
-    FILE *checkDesc = fopen("arquivos/descendente.bin", "rb");
-    if (checkDesc) {
-        fclose(checkDesc);
-        printf("descendente.bin ja existe, reutilizando.\n");
-        return true;
-    }
-
-    FILE *fAsc = fopen("arquivos/ascendente.bin", "rb");
-    if (!fAsc) {
-        printf("Erro ao abrir ascendente.bin para gerar descendente.\n");
-        return false;
-    }
-
-    // Descobre o total real de registros no arquivo
-    fseek(fAsc, 0, SEEK_END);
-    long totalNoArquivo = ftell(fAsc) / sizeof(Registro);
-
-    FILE *fDesc = fopen("arquivos/descendente.bin", "wb");
-    if (!fDesc) {
-        fclose(fAsc);
-        printf("Erro ao criar descendente.bin.\n");
-        return false;
-    }
-
-    Registro r;
-    for (long i = totalNoArquivo - 1; i >= 0; i--) {
-        fseek(fAsc, i * sizeof(Registro), SEEK_SET);
-        if (fread(&r, sizeof(Registro), 1, fAsc) == 1)
-            fwrite(&r, sizeof(Registro), 1, fDesc);
-    }
-
-    fclose(fAsc);
-    fclose(fDesc);
-    return true;
-}
-
-// bool prepararArquivoInicial(Config *config, Metricas *metricas) {
-//     const char *arq = "";
-//     if (config->situacao == 1) arq = "arquivos/ascendente.bin";
-//     else if (config->situacao == 2) arq = "arquivos/descendente.bin";
-//     else if (config->situacao == 3) arq = "arquivos/random.bin";
-
-//     FILE *checkArq = fopen(arq, "rb");
-//     if (checkArq) {
-//         printf("Arquivo %s já existe!\n", arq);
-//         fclose(checkArq);
-//         return true;
-//     }
-
-//     // Abre o arquivo original
-//     FILE *origem = fopen("PROVAO.TXT", "r");
-//     if (!origem) {
-//         printf("Arquivo PROVAO.TXT nao encontrado no diretório.\n");
-//         return false;
-//     }
-
-//     /*
-//         Situacao 1 -> Ordenado ascendentemente
-//         Cria (se já não existir) o arquivo ascendente.bin e salva os registros do PROVAO.TXT nele de maneira ascendente
-//     */
-//     if (config->situacao == 1) {
-//         // Metricas falsas para a fase do preparo
-//         Metricas metricasPreparo;
-//         inicializaMetricas(&metricasPreparo);
-
-//         FILE *ascend = fopen("arquivos/ascendente.bin", "wb+");
-//         if (!ascend) {
-//             printf("Erro ao criar/abrir arquivo ascendente.\n");
-//             return false;
-//         }
-
-//         // Usando o quicksort para fazer a ordenacao inicial solicitada
-//         quicksortExterno(config, &metricasPreparo);
-//         fclose(ascend);
-//     }
-
-//     // Situacao 2 -> Ordenado descendentemente
-//     else if (config->situacao == 2) {
-//         FILE *fAsc = fopen("arquivos/ascendente.bin", "rb");
-//         if (!fAsc) {
-//             printf("O arquivo 'ascendente.bin' precisa existir para gerar o descendente.\n");
-//             printf("Execute o sistema na situacao 1 primeiro.\n");
-//             return false;
-//         }
-
-//         FILE *fDesc = fopen("arquivos/descendente.bin", "wb");
-//         if (!fDesc) {
-//             fclose(fAsc);
-//             return false;
-//         }
-
-//         Registro r;
-//         // Leitura de trás para frente exata usando sizeof(Registro)
-//         for (int i = 471705 - 1; i >= 0; i--) { // Pega o tamanho total do arquivo original
-//             fseek(fAsc, i * sizeof(Registro), SEEK_SET);
-//             fread(&r, sizeof(Registro), 1, fAsc);
-//             fwrite(&r, sizeof(Registro), 1, fDesc);
-//         }
-
-//         fclose(fAsc);
-//         fclose(fDesc);
-//     }
-
-//     // Como o PROVAO.TXT já está desordenado aleatoriamente, só transformamos-o em binário
-//     else if (config->situacao == 3) {
-//         FILE *random = fopen("arquivos/random.bin", "wb+");
-//         if (!random) {
-//             printf("Erro ao criar/abrir arquivo aleatório.\n");
-//             return false;
-//         }
-//         char linha[150];
-//             char temp[51];
-//             Registro reg;
-
-//             // Lendo o PROVAO.TXT até o fim para criar a base de dados binária completa
-//             while (fgets(linha, sizeof(linha), origem) != NULL) {
-//                 if (strlen(linha) < 99)
-//                     continue; // Ignora linhas em branco ou mal formatadas
-
-//                 // Inscrição: colunas 1 a 8 do arquivo texto
-//                 strncpy(temp, linha + 0, 8); temp[8] = '\0';
-//                 reg.inscricao = atol(temp);
-
-//                 // Nota: colunas 10 a 14 do arquivo texto
-//                 strncpy(temp, linha + 9, 5); temp[5] = '\0';
-//                 reg.nota = atof(temp);
-
-//                 // Estado: colunas 16 e 17 do arquivo texto
-//                 strncpy(reg.estado, linha + 15, 2); reg.estado[2] = '\0';
-
-//                 // Cidade: colunas 19 a 68 do arquivo texto
-//                 strncpy(reg.cidade, linha + 18, 50); reg.cidade[50] = '\0';
-
-//                 // Curso: colunas 70 a 99 do arquivo texto
-//                 strncpy(reg.curso, linha + 69, 30); reg.curso[30] = '\0';
-
-//                 // Grava no cache binário
-//                 fwrite(&reg, sizeof(Registro), 1, random);
-//             }
-//             fclose(random);
-//         }
-
-//     fclose(origem);
-//     return true;
-// }
-
-void gravarRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
+void gravarRegistro(FILE *arq,Registro *reg,Metricas *metricas)
+{
     fwrite(reg, sizeof(Registro), 1, arq);
-    if (metricas != NULL)
+
+    if (metricas)
         metricas->escrita_reg++;
 }
 
-void imprimirRegistro(Registro *reg) {
-    printf("%08ld | Nota: %5.1f | %s | %-20s | %-20s\n",
+void imprimirRegistro(Registro *reg)
+{
+    printf("%ld %.1f %s %s %s\n",
            reg->inscricao,
            reg->nota,
            reg->estado,
            reg->cidade,
            reg->curso);
+}
+
+bool abrirFitas(FILE *fitas[],int inicio,int fim,const char *modo)
+{
+    criarPastaSeNaoExistir("fitas");
+
+    char nomeFita[50];
+
+    for (int i = inicio; i < fim; i++)
+    {
+        snprintf(nomeFita,sizeof(nomeFita),"fitas/fita%02d.bin",i);
+
+        fitas[i] = abrirArquivo(nomeFita, modo);
+
+        if (!fitas[i])
+            return false;
+    }
+
+    return true;
+}
+
+void fecharFitas(FILE *fitas[],int inicio,int fim)
+{
+    for (int i = inicio; i < fim; i++)
+    {
+        if (fitas[i])
+        {
+            fclose(fitas[i]);
+            fitas[i] = NULL;
+        }
+    }
+}
+
+bool gerarArquivoRandom(const char *origem)
+{
+    if (arquivoExiste("arquivos/random.bin"))
+        return true;
+
+    FILE *arqOrigem = abrirArquivo(origem, "r");
+
+    if (!arqOrigem)
+        return false;
+
+    FILE *random = abrirArquivo("arquivos/random.bin", "wb");
+
+    if (!random)
+    {
+        fclose(arqOrigem);
+        return false;
+    }
+
+    char linha[150];
+    char temp[51];
+
+    Registro reg;
+
+    while (fgets(linha, sizeof(linha), arqOrigem))
+    {
+        if (strlen(linha) < 99)
+            continue;
+
+        strncpy(temp, linha + 0, 8);
+        temp[8] = '\0';
+        reg.inscricao = atol(temp);
+
+        strncpy(temp, linha + 9, 5);
+        temp[5] = '\0';
+        reg.nota = atof(temp);
+
+        strncpy(reg.estado, linha + 15, 2);
+        reg.estado[2] = '\0';
+
+        strncpy(reg.cidade, linha + 18, 50);
+        reg.cidade[50] = '\0';
+
+        strncpy(reg.curso, linha + 69, 30);
+        reg.curso[30] = '\0';
+
+        gravarRegistro(random, &reg, NULL);
+    }
+
+    fclose(arqOrigem);
+    fclose(random);
+
+    return true;
+}
+
+bool gerarArquivoAscendente()
+{
+    if (arquivoExiste("arquivos/ascendente.bin"))
+        return true;
+
+    FILE *random =
+        abrirArquivo("arquivos/random.bin", "rb");
+
+    if (!random)
+        return false;
+
+    long total = quantidadeRegistros(random);
+
+    Registro *vetor =
+        malloc(total * sizeof(Registro));
+
+    if (!vetor)
+    {
+        fclose(random);
+        return false;
+    }
+
+    if(fread(vetor,sizeof(Registro),total,random) != total){
+        free(vetor);
+        fclose(random);
+        return false;
+    }
+
+    fclose(random);
+
+    Metricas fake;
+    inicializaMetricas(&fake);
+
+    quicksortInterno(vetor,0,total - 1,&fake);
+
+    FILE *asc = abrirArquivo("arquivos/ascendente.bin","wb");
+
+    if (!asc)
+    {
+        free(vetor);
+        return false;
+    }
+
+    fwrite(vetor,sizeof(Registro),total,asc);
+
+    fclose(asc);
+
+    free(vetor);
+
+    return true;
+}
+
+bool gerarArquivoDescendente()
+{
+    if (arquivoExiste("arquivos/descendente.bin"))
+        return true;
+
+    FILE *asc = abrirArquivo("arquivos/ascendente.bin","rb");
+
+    if (!asc)
+        return false;
+
+    long total = quantidadeRegistros(asc);
+
+    Registro *vetor = malloc(total * sizeof(Registro));
+
+    if (!vetor)
+    {
+        fclose(asc);
+        return false;
+    }
+
+    if(fread(vetor,sizeof(Registro),total,asc) != total)
+    {
+        free(vetor);
+        fclose(asc);
+        return false;
+    }
+
+    fclose(asc);
+
+    FILE *desc = abrirArquivo("arquivos/descendente.bin","wb");
+
+    if (!desc)
+    {
+        free(vetor);
+        return false;
+    }
+
+    for (long i = total - 1; i >= 0; i--)
+    {
+        fwrite(&vetor[i],sizeof(Registro),1,desc);
+    }
+
+    fclose(desc);
+
+    free(vetor);
+
+    return true;
+}
+
+bool prepararArquivoInicial(Config *config)
+{
+    criarPastaSeNaoExistir("arquivos");
+
+    if (!gerarArquivoRandom("PROVAO.TXT"))
+        return false;
+
+    if (config->situacao == 3)
+        return true;
+
+    if (!gerarArquivoAscendente())
+        return false;
+
+    if (config->situacao == 1)
+        return true;
+
+    return gerarArquivoDescendente();
 }
 
 void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas) {
@@ -466,21 +437,3 @@ void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas) {
     }
 }
 
-bool lerRegistroBinario(FILE *arq, Registro *reg, Metricas *metricas)
-{
-    if (fread(reg, sizeof(Registro), 1, arq) != 1)
-        return false;
-
-    if (metricas)
-        metricas->ler_reg++;
-
-    return true;
-}
-
-void gravarRegistroBinario(FILE *arq, Registro *reg, Metricas *metricas)
-{
-    fwrite(reg, sizeof(Registro), 1, arq);
-
-    if (metricas)
-        metricas->escrita_reg++;
-}
