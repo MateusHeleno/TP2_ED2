@@ -35,7 +35,9 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
         }
 
         if (lidosBloco > 0) {// ordena o bloco com um quicksort interno
-            quicksortInterno(memoria, 0, lidosBloco - 1, metricas);
+            Metricas fake;
+            inicializaMetricas(&fake);
+            quicksortInterno(memoria, 0, lidosBloco - 1, &fake);
             for (int i = 0; i < lidosBloco; i++)
                 gravarRegistro(fitas[fitaAtual], &memoria[i], metricas);
 
@@ -171,17 +173,13 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
         }
 
         // fecha tudo
-        for (int i = 0; i < TAM_FITAS_IN / 2; i++)
-        {
-            if (fitasIn[i])
-                fclose(fitasIn[i]);
+        for (int i = 0; i < TAM_FITAS_IN; i++)
+            if (fitasIn[i]) fclose(fitasIn[i]);
 
-            if (fitasOut[i])
-                fclose(fitasOut[i]);
-        }
+        for (int i = 0; i < TAM_FITAS_OUT; i++)
+            if (fitasOut[i]) fclose(fitasOut[i]);
 
-        if (blocosGerados <= 1)
-        {
+        if (blocosGerados <= 1) {
             ordenado = true;
 
             sprintf(nomeFita,
