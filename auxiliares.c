@@ -4,7 +4,6 @@
 
 #include "auxiliares.h"
 
-
 // codigo de criacao de uma pasta pras fitas
 #ifdef _WIN32
 #include <direct.h>
@@ -14,39 +13,47 @@
 #define CRIAR_PASTA(caminho) mkdir(caminho, 0777)
 #endif
 
-bool validaEntrada(int argc, char *argv[], Config *config) {
-    if (argc < 4 || argc > 5) {
+bool validaEntrada(int argc, char *argv[], Config *config)
+{
+    if (argc < 4 || argc > 5)
+    {
         printf("O formato é inválido.\nSiga esse formato: ./exe <método> <quantidade> <situação> [-P]\n");
         return false;
     }
 
     config->metodo = atoi(argv[1]);
-    if (config->metodo < 1 || config->metodo > 3) { // verifica se o valor recebido é válido
+    if (config->metodo < 1 || config->metodo > 3)
+    { // verifica se o valor recebido é válido
         printf("Método deve ter os valores entre 1 e 3\n");
         return false;
     }
 
     config->qnt_registros = atoi(argv[2]);
-    if (config->qnt_registros > 471705) {
+    if (config->qnt_registros > 471705)
+    {
         printf("A quantidade de registros não pode ser maior do que 471.705!\n");
         return false;
     }
     bool aux = false;
-    for (int i = 100; i <= 100000; i = i * 10) {
-        if (config->qnt_registros == i || config->qnt_registros == 471705) {
+    for (int i = 100; i <= 100000; i = i * 10)
+    {
+        if (config->qnt_registros == i || config->qnt_registros == 471705)
+        {
             aux = true;
             break;
         }
         aux = false;
     }
 
-    if (!aux) {
+    if (!aux)
+    {
         printf("A quantidade de registros deve ser exatamente: 100, 1000, 10000, 100000 ou 471705.\n");
         return false;
     }
 
     config->situacao = atoi(argv[3]);
-    if (config->situacao < 1 || config->situacao > 3) { // verifica se o valor recebido é válido
+    if (config->situacao < 1 || config->situacao > 3)
+    { // verifica se o valor recebido é válido
         printf("Situação deve ter os valores entre 1 e 3\n");
         return false;
     }
@@ -55,7 +62,8 @@ bool validaEntrada(int argc, char *argv[], Config *config) {
         if (strcmp(argv[4], "-P") == 0)
             config->p = 1;
 
-        else {
+        else
+        {
             printf("O quinto argumento deve ser '-P' ou vazio \n");
             return false;
         }
@@ -65,18 +73,22 @@ bool validaEntrada(int argc, char *argv[], Config *config) {
     return true;
 }
 
-void inicializaMetricas(Metricas *metricas) {
+void inicializaMetricas(Metricas *metricas)
+{
     metricas->ler_reg = 0;
     metricas->escrita_reg = 0;
     metricas->comparacoes = 0;
     metricas->tempo = 0.0;
 }
 
-void printMetricas(Metricas metricas, Config config) {
-    if (config.p) {
+void printMetricas(Metricas metricas, Config config)
+{
+    if (config.p)
+    {
         printf("\n================ ARQUIVO ORDENADO (-P) ================\n");
-        FILE *resultado = fopen("resultado_final.bin", "rb");
-        if (resultado) {
+        FILE *resultado = abrirArquivo("resultado_final.bin", "rb");
+        if (resultado)
+        {
             Registro reg;
             while (lerRegistro(resultado, &reg, NULL))
                 imprimirRegistro(&reg);
@@ -96,10 +108,12 @@ void printMetricas(Metricas metricas, Config config) {
     printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
 }
 
-bool arquivoExiste(const char *nome) {
+bool arquivoExiste(const char *nome)
+{
     FILE *f = fopen(nome, "rb");
 
-    if (f) {
+    if (f)
+    {
         fclose(f);
         return true;
     }
@@ -107,7 +121,8 @@ bool arquivoExiste(const char *nome) {
     return false;
 }
 
-long quantidadeRegistros(FILE *arq) {
+long quantidadeRegistros(FILE *arq)
+{
     fseek(arq, 0, SEEK_END);
 
     long total = ftell(arq) / sizeof(Registro);
@@ -117,7 +132,8 @@ long quantidadeRegistros(FILE *arq) {
     return total;
 }
 
-FILE* abrirArquivo(const char *nome, const char *modo) {
+FILE *abrirArquivo(const char *nome, const char *modo)
+{
     FILE *arq = fopen(nome, modo);
 
     if (!arq)
@@ -126,11 +142,13 @@ FILE* abrirArquivo(const char *nome, const char *modo) {
     return arq;
 }
 
-void criarPastaSeNaoExistir(const char *nome) {
+void criarPastaSeNaoExistir(const char *nome)
+{
     CRIAR_PASTA(nome);
 }
 
-bool lerRegistro(FILE *arq,Registro *reg,Metricas *metricas) {
+bool lerRegistro(FILE *arq, Registro *reg, Metricas *metricas)
+{
     if (fread(reg, sizeof(Registro), 1, arq) != 1)
         return false;
 
@@ -140,14 +158,16 @@ bool lerRegistro(FILE *arq,Registro *reg,Metricas *metricas) {
     return true;
 }
 
-void gravarRegistro(FILE *arq,Registro *reg,Metricas *metricas) {
+void gravarRegistro(FILE *arq, Registro *reg, Metricas *metricas)
+{
     fwrite(reg, sizeof(Registro), 1, arq);
 
     if (metricas)
         metricas->escrita_reg++;
 }
 
-void imprimirRegistro(Registro *reg) {
+void imprimirRegistro(Registro *reg)
+{
     printf("%ld %.1f %s %s %s\n",
            reg->inscricao,
            reg->nota,
@@ -156,33 +176,42 @@ void imprimirRegistro(Registro *reg) {
            reg->curso);
 }
 
-bool abrirFitas(FILE *fitas[],int inicio,int fim,const char *modo) {
+bool abrirFitas(FILE *fitas[], int inicio, int fim, const char *modo)
+{
     criarPastaSeNaoExistir("fitas");
 
     char nomeFita[50];
 
-    for (int i = inicio; i < fim; i++) {
-        snprintf(nomeFita, sizeof(nomeFita),"fitas/fita%02d.bin", i);
+    for (int i = inicio; i < fim; i++)
+    {
+        snprintf(nomeFita, sizeof(nomeFita), "fitas/fita%02d.bin", i);
 
         fitas[i] = abrirArquivo(nomeFita, modo);
 
         if (!fitas[i])
+        {
+            fecharFitas(fitas, inicio, i);
             return false;
+        }
     }
 
     return true;
 }
 
-void fecharFitas(FILE *fitas[],int inicio,int fim) {
-    for (int i = inicio; i < fim; i++) {
-        if (fitas[i]) {
+void fecharFitas(FILE *fitas[], int inicio, int fim)
+{
+    for (int i = inicio; i < fim; i++)
+    {
+        if (fitas[i])
+        {
             fclose(fitas[i]);
             fitas[i] = NULL;
         }
     }
 }
 
-bool gerarArquivoRandom(const char *origem) {
+bool gerarArquivoRandom(const char *origem)
+{
     if (arquivoExiste("arquivos/random.bin"))
         return true;
 
@@ -193,7 +222,8 @@ bool gerarArquivoRandom(const char *origem) {
 
     FILE *random = abrirArquivo("arquivos/random.bin", "wb");
 
-    if (!random) {
+    if (!random)
+    {
         fclose(arqOrigem);
         return false;
     }
@@ -203,7 +233,8 @@ bool gerarArquivoRandom(const char *origem) {
 
     Registro reg;
 
-    while (fgets(linha, sizeof(linha), arqOrigem)) {
+    while (fgets(linha, sizeof(linha), arqOrigem))
+    {
         if (strlen(linha) < 99)
             continue;
 
@@ -233,7 +264,8 @@ bool gerarArquivoRandom(const char *origem) {
     return true;
 }
 
-bool gerarArquivoAscendente() {
+bool gerarArquivoAscendente()
+{
     if (arquivoExiste("arquivos/ascendente.bin"))
         return true;
 
@@ -246,12 +278,14 @@ bool gerarArquivoAscendente() {
 
     Registro *vetor = malloc(total * sizeof(Registro));
 
-    if (!vetor) {
+    if (!vetor)
+    {
         fclose(random);
         return false;
     }
 
-    if(fread(vetor,sizeof(Registro),total,random) != total){
+    if (fread(vetor, sizeof(Registro), total, random) != total)
+    {
         free(vetor);
         fclose(random);
         return false;
@@ -262,16 +296,17 @@ bool gerarArquivoAscendente() {
     Metricas fake;
     inicializaMetricas(&fake);
 
-    quicksortInterno(vetor,0,total - 1,&fake);
+    quicksortInterno(vetor, 0, total - 1, &fake);
 
-    FILE *asc = abrirArquivo("arquivos/ascendente.bin","wb");
+    FILE *asc = abrirArquivo("arquivos/ascendente.bin", "wb");
 
-    if (!asc) {
+    if (!asc)
+    {
         free(vetor);
         return false;
     }
 
-    fwrite(vetor,sizeof(Registro),total,asc);
+    fwrite(vetor, sizeof(Registro), total, asc);
 
     fclose(asc);
     free(vetor);
@@ -279,11 +314,12 @@ bool gerarArquivoAscendente() {
     return true;
 }
 
-bool gerarArquivoDescendente() {
+bool gerarArquivoDescendente()
+{
     if (arquivoExiste("arquivos/descendente.bin"))
         return true;
 
-    FILE *asc = abrirArquivo("arquivos/ascendente.bin","rb");
+    FILE *asc = abrirArquivo("arquivos/ascendente.bin", "rb");
 
     if (!asc)
         return false;
@@ -292,12 +328,14 @@ bool gerarArquivoDescendente() {
 
     Registro *vetor = malloc(total * sizeof(Registro));
 
-    if (!vetor) {
+    if (!vetor)
+    {
         fclose(asc);
         return false;
     }
 
-    if(fread(vetor,sizeof(Registro),total,asc) != total) {
+    if (fread(vetor, sizeof(Registro), total, asc) != total)
+    {
         free(vetor);
         fclose(asc);
         return false;
@@ -305,16 +343,16 @@ bool gerarArquivoDescendente() {
 
     fclose(asc);
 
-    FILE *desc = abrirArquivo("arquivos/descendente.bin","wb");
+    FILE *desc = abrirArquivo("arquivos/descendente.bin", "wb");
 
-    if (!desc) {
+    if (!desc)
+    {
         free(vetor);
         return false;
     }
 
     for (long i = total - 1; i >= 0; i--)
-        fwrite(&vetor[i],sizeof(Registro),1,desc);
-
+        fwrite(&vetor[i], sizeof(Registro), 1, desc);
 
     fclose(desc);
     free(vetor);
@@ -322,7 +360,8 @@ bool gerarArquivoDescendente() {
     return true;
 }
 
-bool prepararArquivoInicial(Config *config) {
+bool prepararArquivoInicial(Config *config)
+{
     criarPastaSeNaoExistir("arquivos");
 
     if (!gerarArquivoRandom("PROVAO.TXT"))
@@ -340,26 +379,31 @@ bool prepararArquivoInicial(Config *config) {
     return gerarArquivoDescendente();
 }
 
-void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas) {
+void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas)
+{
     int i = esq, j = dir;
     Registro pivo = vetor[(esq + dir) / 2];
 
-    while (i <= j) {
+    while (i <= j)
+    {
         if (metricas)
             metricas->comparacoes++;
-        while (vetor[i].nota < pivo.nota) {
+        while (vetor[i].nota < pivo.nota)
+        {
             i++;
             if (metricas)
                 metricas->comparacoes++;
         }
         if (metricas)
             metricas->comparacoes++;
-        while (vetor[j].nota > pivo.nota) {
+        while (vetor[j].nota > pivo.nota)
+        {
             j--;
             if (metricas)
                 metricas->comparacoes++;
         }
-        if (i <= j) {
+        if (i <= j)
+        {
             Registro temp = vetor[i];
             vetor[i] = vetor[j];
             vetor[j] = temp;
@@ -373,8 +417,10 @@ void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas) {
         quicksortInterno(vetor, i, dir, metricas);
 }
 
-void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas) {
-    for (int i = 1; i < tamanho; i++) {
+void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas)
+{
+    for (int i = 1; i < tamanho; i++)
+    {
         RegFita chave = vetor[i];
         int j = i - 1;
 
@@ -396,4 +442,3 @@ void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas) {
         vetor[j + 1] = chave;
     }
 }
-

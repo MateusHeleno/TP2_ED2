@@ -8,5 +8,6 @@ bool lerRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas
 bool gravarRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas);
 void quickSortExternoRec(FILE *arq, int esq, int dir, Metricas *metricas);
 void quicksortExterno(Config *config, Metricas *metricas);
+bool prepararCopiaQuicksort(Config *config);
 
 #endif
