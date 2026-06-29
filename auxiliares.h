@@ -62,4 +62,5 @@ bool gerarArquivoDescendente();
 //sort
 void quicksortInterno(Registro *vetor, int esq, int dir, Metricas *metricas);
 void insertionSortFitas(RegFita *vetor, int tamanho, Metricas *metricas);
+
 #endif

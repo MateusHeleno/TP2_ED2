@@ -11,14 +11,14 @@ bool lerRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas
     if (fseek(arq, pos * sizeof(Registro), SEEK_SET) != 0)
         return false;
 
-    return lerRegistroTexto(arq, reg, metricas);
+    return lerRegistro(arq, reg, metricas);
 }
 
 bool gravarRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
     if (fseek(arq, pos * sizeof(Registro), SEEK_SET) != 0)
         return false;
 
-    gravarRegistroTexto(arq, reg, metricas);
+    gravarRegistro(arq, reg, metricas);
     return true;
 }
 

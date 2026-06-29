@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
         Isso evita com que diversos arquivos de tamanhos diferentes sejam gerados e que eles sejam gerados a cada vez
         que o programa for executado.
     */
-    if (!prepararArquivoInicial(&config, &metricas)) {
+    if (!prepararArquivoInicial(&config)) {
         printf("\nFalha na preparacao do arquivos inicias.\n");
         return 1;
     }
