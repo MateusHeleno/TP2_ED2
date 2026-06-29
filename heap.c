@@ -33,14 +33,12 @@ void descerNoHeap(MinHeap *heap, int i, Metricas *metricas) {
 
         if (esq < heap->tamanho) {
             metricas->comparacoes++;
-
             if (!compararNos(heap->dados[esq], heap->dados[menor]))
                 menor = esq;
         }
 
         if (dir < heap->tamanho) {
             metricas->comparacoes++;
-
             if (!compararNos(heap->dados[dir], heap->dados[menor]))
                 menor = dir;
         }

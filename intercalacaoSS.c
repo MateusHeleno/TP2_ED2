@@ -47,12 +47,10 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
     while (heap.tamanho > 0) {
         // menor elemento da run atual
         NoHeap menor = getMenor(&heap);
-
         gravarRegistro(fitas[fita_atual],&menor.reg,metricas);
 
         Registro proximo;
-
-        if (lidos_total < quantidade && lerRegistro(arqEntrada,&proximo,metricas)) {
+        if (lidos_total < quantidade && lerRegistro(arqEntrada, &proximo, metricas)) {
             lidos_total++;
 
             NoHeap novoNo;
@@ -60,14 +58,15 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
             novoNo.reg = proximo;
             novoNo.fita_origem = 0;
 
-            if (metricas)
-                metricas->comparacoes++;
-
             // se for menor que o último removido,
             // pertence à próxima run
-            novoNo.marcado = (proximo.nota < menor.reg.nota);
 
-            substituirRaiz( &heap,novoNo,metricas);
+            novoNo.marcado = (proximo.nota < menor.reg.nota);
+            metricas->comparacoes++;
+
+            // Insere o novo nó na raiz do heap e reconstitui o heap
+            // se ele tiver sido marcado, ele é considerado como maior que os elementos presentes no heap e, portanto, vai para o final
+            substituirRaiz(&heap, novoNo, metricas);
         }
         else // acabou o arquivo original
             removerRaiz(&heap, metricas);

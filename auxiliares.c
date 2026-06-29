@@ -89,9 +89,9 @@ void printMetricas(Metricas metricas, Config config) {
         printf("========================================================\n");
     }
 
-    printf("\n\t\tMétricas \n");
-    printf("  Leituras    : %6d \n", metricas.ler_reg);
-    printf("  Escrita     : %6d \n", metricas.escrita_reg);
+    printf("\n\t  Métricas \n");
+    printf("  Leituras       : %6d \n", metricas.ler_reg);
+    printf("  Escrita        : %6d \n", metricas.escrita_reg);
     printf("  Comparações    : %6d \n", metricas.comparacoes);
     printf("  Tempo Total    : %.6lf s\n\n", metricas.tempo);
 }
