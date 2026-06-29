@@ -138,6 +138,17 @@ bool lerRegistroTexto(FILE *arq, Registro *reg, Metricas *metricas) {
 }
 
 bool prepararArquivoInicial(Config *config, Metricas *metricas) {
+    // const char *arquivoAlvo = "";
+    // if (config->situacao == 1) arquivoAlvo = "arquivos/ascendente.bin";
+    // else if (config->situacao == 2) arquivoAlvo = "arquivos/descendente.bin";
+    // else if (config->situacao == 3) arquivoAlvo = "arquivos/random.bin";
+
+    // FILE *arq = fopen(arquivoAlvo, "rb");
+    // if (arq) {
+    //     fclose(arq);
+    //     return true;
+    // }
+
     CRIAR_PASTA("arquivos");
 
     const int TOTAL = 471705;

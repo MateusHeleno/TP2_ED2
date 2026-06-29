@@ -5,8 +5,6 @@
 #include "auxiliares.h"
 #include "quicksort.h"
 
-// Tamanho do registro e da memória
-#define TAM_REGISTRO_TXT 100
 #define TAM_MEMORIA 20
 
 bool lerRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
