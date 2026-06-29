@@ -13,9 +13,9 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
         return;
     }
 
-    FILE *fitas[TAM_FITAS]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
+    FILE *fitas[TAM_FITAS]; // gera as 40 fitas - 20 de entrada e 20 de saida
 
-    if (!abrirFitas(fitas, 0, TAM_RAM, "wb")) {  // tenta abrir as fitas de entrada
+    if (!abrirFitas(fitas, 0, TAM_FITAS_IN, "wb")) {  // tenta abrir as fitas de entrada
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
         return;
@@ -39,24 +39,38 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
             for (int i = 0; i < lidosBloco; i++)
                 gravarRegistro(fitas[fitaAtual], &memoria[i], metricas);
 
-            fitaAtual = (fitaAtual + 1) % TAM_RAM;
+            fitaAtual = (fitaAtual + 1) % tam TAM_FITAS_IN;
         }
     }
 
-    fecharFitas(fitas, 0, TAM_RAM);
+    fecharFitas(fitas, 0, TAM_FITAS_IN);
     fclose(arqEntrada);
 }
 
 void intercalacaoOI(Config *config, Metricas *metricas) {
     const char *arq;
-    if (config->situacao == 1)      arq = "arquivos/ascendente.bin";
-    else if (config->situacao == 2) arq = "arquivos/descendente.bin";
-    else if (config->situacao == 3) arq = "arquivos/random.bin";
+    switch (config->situacao)
+    {
+        case 1:
+            arq = "arquivos/ascendente.bin";
+            break;
+
+        case 2:
+            arq = "arquivos/descendente.bin";
+            break;
+
+        case 3:
+            arq = "arquivos/random.bin";
+            break;
+
+        default:
+            return;
+    }
 
     gerarBlocosOrdenadosOI(arq, config->qnt_registros, metricas);
 
     int entradaBase = 0;
-    int saidaBase = TAM_FITAS / 2;
+    int saidaBase = TAM_FITAS_IN;
 
     int tamanhoBlocoAtual = TAM_RAM;
 
@@ -64,39 +78,38 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
 
     char nomeFita[50];
 
-    FILE *fitasIn[(TAM_FITAS / 2)];
-    FILE *fitasOut[(TAM_FITAS / 2)];
+    FILE *fitasIn[TAM_FITAS_IN];
+    FILE *fitasOut[TAM_FITAS_OUT];
 
-    Registro prox_reg[TAM_RAM];
-    bool fitaTemDado[TAM_RAM];
+    BlocoFita blocos[TAM_FITAS_IN];
+    Registro prox_reg[TAM_FITAS_IN];
 
     while (!ordenado) {
         // abre fitas de entrada
-        for (int i = 0; i < (TAM_FITAS / 2); i++)
+        for (int i = 0; i < TAM_FITAS_IN; i++)
         {
-            sprintf(nomeFita,
-                    "fitas/fita%02d.bin",
-                    entradaBase + i);
+            sprintf(nomeFita,"fitas/fita%02d.bin",entradaBase + i);
 
             fitasIn[i] = abrirArquivo(nomeFita, "rb");
 
-            if (fitasIn[i])
+            blocos[i].fita = fitasIn[i];
+            blocos[i].registros_lidos = 0;
+            blocos[i].tamanho_bloco = tamanhoBlocoAtual
+
+                if (fitasIn[i])
             {
-                fitaTemDado[i] =
-                    lerRegistro(fitasIn[i],&prox_reg[i],metricas);
+                blocos[i].ativo =lerRegistro(fitasIn[i],&prox_reg[i],metricas);
             }
             else
             {
-                fitaTemDado[i] = false;
+                blocos[i].ativo = false;
             }
         }
 
         // abre fitas de saída
-        for (int i = 0; i < (TAM_FITAS / 2); i++)
+        for (int i = 0; i < TAM_FITAS_OUT; i++)
         {
-            sprintf(nomeFita,
-                    "fitas/fita%02d.bin",
-                    saidaBase + i);
+            sprintf(nomeFita,"fitas/fita%02d.bin",saidaBase + i);
 
             fitasOut[i] = abrirArquivo(nomeFita, "wb");
         }
@@ -109,12 +122,10 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
             MinHeap heap;
             heap.tamanho = 0;
 
-            int lidosBloco[TAM_RAM] = {0};
-
             // coloca um registro de cada bloco no heap
-            for (int i = 0; i < TAM_RAM; i++)
+            for (int i = 0; i < TAM_FITAS_IN; i++)
             {
-                if (fitaTemDado[i])
+                if (blocos[i].ativo)
                 {
                     NoHeap no;
 
@@ -124,10 +135,9 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
 
                     heap.dados[heap.tamanho++] = no;
 
-                    lidosBloco[i] = 1;
+                    blocos[i].registros_lidos = 1;
 
-                    fitaTemDado[i] =
-                        lerRegistro(fitasIn[i],&prox_reg[i],metricas);
+                    blocos[i].ativo = lerRegistro(fitasIn[i],&prox_reg[i],metricas);
                 }
             }
 
@@ -144,11 +154,9 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
 
                 int f = menor.fita_origem;
 
-                gravarRegistro(fitasOut[saidaAtual],&menor.reg,metricas
-                );
+                gravarRegistro(fitasOut[saidaAtual],&menor.reg,metricas);
 
-                if (lidosBloco[f] < tamanhoBlocoAtual &&
-                    fitaTemDado[f])
+                if (blocos[f].registros_lidos < blocos[f].tamanho_bloco && blocos[f].ativo)
                 {
                     NoHeap substituto;
 
@@ -156,16 +164,11 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
                     substituto.fita_origem = f;
                     substituto.marcado = false;
 
-                    substituirRaiz(
-                        &heap,
-                        substituto,
-                        metricas
-                    );
+                    substituirRaiz(&heap,substituto,metricas);
 
-                    lidosBloco[f]++;
+                    blocos[f].registros_lidos++;
 
-                    fitaTemDado[f] =
-                        lerRegistro(fitasIn[f],&prox_reg[f],metricas);
+                    blocos[f].ativo =lerRegistro(fitasIn[f],&prox_reg[f],metricas);
                 }
                 else
                 {
@@ -173,11 +176,11 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
                 }
             }
 
-            saidaAtual = (saidaAtual + 1) % (TAM_FITAS / 2);
+            saidaAtual = (saidaAtual + 1) % TAM_FITAS_OUT;
         }
 
         // fecha tudo
-        for (int i = 0; i < TAM_FITAS / 2; i++)
+        for (int i = 0; i < TAM_FITAS_IN / 2; i++)
         {
             if (fitasIn[i])
                 fclose(fitasIn[i]);
@@ -205,7 +208,7 @@ void intercalacaoOI(Config *config, Metricas *metricas) {
             entradaBase = saidaBase;
             saidaBase = temp;
 
-            tamanhoBlocoAtual *= TAM_FITAS / 2;
+            tamanhoBlocoAtual *= TAM_FITAS_IN;
         }
     }
 }
