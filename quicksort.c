@@ -10,14 +10,14 @@
 #define TAM_MEMORIA 20
 
 bool lerRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
-    if (fseek(arq, pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
+    if (fseek(arq, pos * sizeof(Registro), SEEK_SET) != 0)
         return false;
 
     return lerRegistroTexto(arq, reg, metricas);
 }
 
 bool gravarRegistroNaPosicao(FILE *arq, Registro *reg, long pos, Metricas *metricas) {
-    if (fseek(arq, pos * TAM_REGISTRO_TXT, SEEK_SET) != 0)
+    if (fseek(arq, pos * sizeof(Registro), SEEK_SET) != 0)
         return false;
 
     gravarRegistroTexto(arq, reg, metricas);
@@ -148,11 +148,15 @@ void quickSortExternoRec(FILE* arq, int esq, int dir, Metricas *metricas) {
 }
 
 /*
-    Ele vai ler os registros contidos no arquivo `arq` passado por parâmetro
-    e a partir dele gerar o arquivo final ordenado
+    O quickSortExterno recebe a struct Config, que contém a situação do arq (ascendente, etc)
+    e baseado nisso abre o arquivo correto.
 */
-void quicksortExterno(Config *config, Metricas *metricas, FILE *arq) {
-    FILE *arq = fopen(arq, "rb+");
+void quicksortExterno(Config *config, Metricas *metricas) {
+    FILE *arq;
+    if (config->situacao == 1) arq = fopen("arquivos/ascendente.bin", "rb+");
+    else if (config->situacao == 2) arq = fopen("arquivos/descendente.bin", "rb+");
+    else if (config->situacao == 3) arq = fopen("arquivos/random.bin", "rb+");
+
     if (!arq) {
         printf("Nao foi possivel abrir o arquivo de leitura para o Quicksort Externo.\n");
         return;

@@ -1,7 +1,8 @@
-#ifndef AUXILIARES_H
-#define AUXILIARES_H
+#ifndef HEAP_H
+#define HEAP_H
 
 #include <stdbool.h>
+#include "auxiliares.h"
 
 // heap generico
 typedef struct

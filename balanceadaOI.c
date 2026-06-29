@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "auxiliares.h"
+#include "balanceadaOI.h"
+#include "heap.h"
 
 // gera blocos ordenados de tamanho igual
 void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *metricas)
@@ -62,14 +65,14 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     int entradaBase = 0;
     int saidaBase = 20;
 
-    int tamanhoBlocoAtual = TAM_RAM
+    int tamanhoBlocoAtual = TAM_RAM;
 
-        bool ordenado = false;
+    bool ordenado = false;
 
     char nomeFita[50];
 
-    FILE *fitasIn[(TAM_FITA / 2)];
-    FILE *fitasOut[(TAM_FITA / 2)];
+    FILE *fitasIn[(TAM_FITAS / 2)];
+    FILE *fitasOut[(TAM_FITAS / 2)];
 
     Registro prox_reg[20];
     bool fitaTemDado[20];
@@ -77,7 +80,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     while (!ordenado)
     {
         // abre fitas de entrada
-        for (int i = 0; i < (TAM_FITA / 2); i++)
+        for (int i = 0; i < (TAM_FITAS / 2); i++)
         {
             sprintf(nomeFita,
                     "fitas/fita%02d.bin",
@@ -101,7 +104,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
         }
 
         // abre fitas de saída
-        for (int i = 0; i < (TAM_FITA / 2); i++)
+        for (int i = 0; i < (TAM_FITAS / 2); i++)
         {
             sprintf(nomeFita,
                     "fitas/fita%02d.bin",

@@ -2,9 +2,9 @@
 #define AUXILIARES_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
-typedef struct
-{
+typedef struct {
     long int inscricao;
     float nota;
     char estado[3];
@@ -12,24 +12,21 @@ typedef struct
     char curso[31];
 } Registro;
 
-typedef struct
-{
+typedef struct {
     int metodo;
     int qnt_registros;
     int situacao;
     bool p;
 } Config;
 
-typedef struct
-{
+typedef struct {
     int ler_reg;
     int escrita_reg;
     int comparacoes;
     double tempo;
 } Metricas;
 
-typedef struct
-{
+typedef struct {
     Registro reg;
     int fita_origem;
 } RegFita;

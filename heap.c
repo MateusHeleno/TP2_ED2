@@ -1,5 +1,7 @@
 #include<stdbool.h>
-#include<auxiliares.h>
+
+#include "auxiliares.h"
+#include "heap.h"
 
 bool compararNos(NoHeap a, NoHeap b)
 {

@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "auxiliares.h"
+#include "heap.h"
 #include "intercalacaoSS.h"
 
 // fase de pre-processamento gera blocos de tamanhos variados nas fitas
-void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo,int quantidade,Metricas *metricas)
-{
+void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, Metricas *metricas) {
     FILE *arqEntrada = fopen(nomeArquivo, "rb");
 
     if (!arqEntrada)
