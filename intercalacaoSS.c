@@ -29,7 +29,7 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
 
     // preenche o heap inicial
     while (heap.tamanho < TAM_RAM && lidos_total < quantidade) {
-        if (lerRegistro(arqEntrada,&heap.dados[heap.tamanho].reg,metricas)) {
+        if (lerRegistro(arqEntrada, &heap.dados[heap.tamanho].reg, metricas)) {
             heap.dados[heap.tamanho].fita_origem = 0;
             heap.dados[heap.tamanho].marcado = false;
 
@@ -38,7 +38,6 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
         }
         else
             break;
-
     }
 
     construirMinHeap(&heap, metricas);
@@ -47,7 +46,7 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
 
     while (heap.tamanho > 0) {
         // menor elemento da run atual
-        NoHeap menor = heap.dados[0];
+        NoHeap menor = getMenor(&heap);
 
         gravarRegistro(fitas[fita_atual],&menor.reg,metricas);
 
@@ -91,7 +90,12 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
 }
 
 void intercalacaoSS(Config *config, Metricas *metricas) {
-    gerarBlocosOrdenadosSubstituicao("entrada_atual.bin",config->qnt_registros,metricas);
+    const char *arq;
+    if (config->situacao == 1)      arq = "arquivos/ascendente.bin";
+    else if (config->situacao == 2) arq = "arquivos/descendente.bin";
+    else if (config->situacao == 3) arq = "arquivos/random.bin";
+
+    gerarBlocosOrdenadosSubstituicao(arq, config->qnt_registros, metricas);
 
     int entrada_base = 0;
     int saida_base = (TAM_FITAS / 2);

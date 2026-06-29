@@ -5,15 +5,13 @@
 #include "auxiliares.h"
 
 // heap generico
-typedef struct
-{
+typedef struct {
     Registro reg;
     int fita_origem; // usado na intercalação 0 a 19
     bool marcado;    // usado na seleção por substituição, true se vai para o próximo bloco
 } NoHeap;
 
-typedef struct
-{
+typedef struct {
     NoHeap dados[20]; // tamanho máximo da memória interna
     int tamanho;
 } MinHeap;
@@ -24,5 +22,6 @@ void descerNoHeap(MinHeap *heap, int i, Metricas *metricas);
 void construirMinHeap(MinHeap *heap, Metricas *metricas);
 void substituirRaiz(MinHeap *heap, NoHeap novoNo, Metricas *metricas);
 void removerRaiz(MinHeap *heap, Metricas *metricas);
+NoHeap getMenor(MinHeap *heap);
 
 #endif

@@ -6,19 +6,16 @@
 #include "heap.h"
 
 // gera blocos ordenados de tamanho igual
-void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *metricas)
-{
+void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *metricas) {
     FILE *arqEntrada = abrirArquivo(nomeArquivo, "rb");
-    if (!arqEntrada)
-    {
+    if (!arqEntrada) {
         printf("Erro ao abrir arquivo base: %s\n", nomeArquivo);
         return;
     }
 
     FILE *fitas[TAM_FITAS]; // gera as 40 fitas - TAM_RAM de entrada e 20 de saida
 
-    if (!abrirFitas(fitas, 0, TAM_RAM, "wb")) // tenta abrir as fitas de entrada
-    {
+    if (!abrirFitas(fitas, 0, TAM_RAM, "wb")) {  // tenta abrir as fitas de entrada
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
         return;
@@ -28,25 +25,19 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
     int lidosTotal = 0;
     int fitaAtual = 0;
 
-    while (lidosTotal < quantidade) // para ler a quantidade solicitada pela chamada
-    {
+    while (lidosTotal < quantidade) { // para ler a quantidade solicitada pela chamada
         int lidosBloco = 0;
 
         // para ler um bloco de TAM_RAM reg
-        while (lidosBloco < TAM_RAM && lidosTotal < quantidade && lerRegistro(arqEntrada, &memoria[lidosBloco], metricas))
-        {
+        while (lidosBloco < TAM_RAM && lidosTotal < quantidade && lerRegistro(arqEntrada, &memoria[lidosBloco], metricas)) {
             lidosBloco++;
             lidosTotal++;
         }
 
-        if (lidosBloco > 0) // ordena o bloco com um quicksort interno
-        {
+        if (lidosBloco > 0) {// ordena o bloco com um quicksort interno
             quicksortInterno(memoria, 0, lidosBloco - 1, metricas);
-
             for (int i = 0; i < lidosBloco; i++)
-            {
                 gravarRegistro(fitas[fitaAtual], &memoria[i], metricas);
-            }
 
             fitaAtual = (fitaAtual + 1) % TAM_RAM;
         }
@@ -56,9 +47,13 @@ void gerarBlocosOrdenadosOI(const char *nomeArquivo, int quantidade, Metricas *m
     fclose(arqEntrada);
 }
 
-void intercalacaoOI(Config *config, Metricas *metricas)
-{
-    gerarBlocosOrdenadosOI("entrada_atual.bin",config->qnt_registros,metricas);
+void intercalacaoOI(Config *config, Metricas *metricas) {
+    const char *arq;
+    if (config->situacao == 1)      arq = "arquivos/ascendente.bin";
+    else if (config->situacao == 2) arq = "arquivos/descendente.bin";
+    else if (config->situacao == 3) arq = "arquivos/random.bin";
+
+    gerarBlocosOrdenadosOI(arq, config->qnt_registros, metricas);
 
     int entradaBase = 0;
     int saidaBase = TAM_FITAS / 2;
@@ -75,8 +70,7 @@ void intercalacaoOI(Config *config, Metricas *metricas)
     Registro prox_reg[TAM_RAM];
     bool fitaTemDado[TAM_RAM];
 
-    while (!ordenado)
-    {
+    while (!ordenado) {
         // abre fitas de entrada
         for (int i = 0; i < (TAM_FITAS / 2); i++)
         {

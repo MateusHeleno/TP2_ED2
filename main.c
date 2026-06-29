@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
 
     Metricas metricas;
     inicializaMetricas(&metricas);
-    printf("Preparando o arquivo de entrada...\n");
 
     /*
         Essa parte do código irá gerar 3 arquivos ->
@@ -30,23 +29,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Arquivo preparado com sucesso!\n\n");
     clock_t inicio_relogio, fim_relogio;
     inicio_relogio = clock();
 
     switch (config.metodo) {
         case 1:
-            printf("Iniciando o Metodo 1: Intercalacao Balanceada...\n");
+            printf("\nIniciando o Metodo 1: Intercalacao Balanceada...\n");
             intercalacaoOI(&config, &metricas);
             break;
 
         case 2:
-            printf("Iniciando o Metodo 2: Selecao por Substituicao...\n");
+            printf("\nIniciando o Metodo 2: Selecao por Substituicao...\n");
             intercalacaoSS(&config, &metricas);
             break;
 
         case 3:
-            printf("Iniciando o Metodo 3: Quicksort Externo...\n");
+            printf("\nIniciando o Metodo 3: Quicksort Externo...\n");
             quicksortExterno(&config, &metricas);
             break;
     }

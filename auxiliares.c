@@ -162,7 +162,7 @@ bool abrirFitas(FILE *fitas[],int inicio,int fim,const char *modo) {
     char nomeFita[50];
 
     for (int i = inicio; i < fim; i++) {
-        snprintf(nomeFita,sizeof(nomeFita),"fitas/fita%02d.bin",i);
+        snprintf(nomeFita, sizeof(nomeFita),"fitas/fita%02d.bin", i);
 
         fitas[i] = abrirArquivo(nomeFita, modo);
 
