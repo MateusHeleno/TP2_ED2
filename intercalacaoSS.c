@@ -6,14 +6,14 @@
 #include "intercalacaoSS.h"
 
 // fase de pre-processamento gera blocos de tamanhos variados nas fitas
-void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, Metricas *metricas)
+int gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, Metricas *metricas)
 {
     FILE *arqEntrada = fopen(nomeArquivo, "rb");
 
     if (!arqEntrada)
     {
         printf("Erro ao abrir arquivo base: %s\n", nomeArquivo);
-        return;
+        return 0;
     }
 
     FILE *fitas[TAM_FITAS];
@@ -22,13 +22,14 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
     {
         printf("Erro ao criar fitas temporarias.\n");
         fclose(arqEntrada);
-        return;
+        return 0;
     }
 
     MinHeap heap;
     heap.tamanho = 0;
 
     int lidos_total = 0;
+    int blocos = 1; // o primeiro bloco é sempre montado
 
     // preenche o heap inicial
     while (heap.tamanho < TAM_RAM && lidos_total < quantidade)
@@ -82,6 +83,7 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
         if (heap.tamanho > 0 && heap.dados[0].marcado)
         {
             fita_atual = (fita_atual + 1) % (TAM_FITAS / 2);
+            blocos++;
 
             // desmarca todos
             for (int i = 0; i < heap.tamanho; i++)
@@ -94,6 +96,8 @@ void gerarBlocosOrdenadosSubstituicao(const char *nomeArquivo, int quantidade, M
     fecharFitas(fitas, 0, (TAM_FITAS / 2));
 
     fclose(arqEntrada);
+
+    return blocos; // informa a fase 2 quantos blocos foram gerados (ajuda no melhor caso)
 }
 
 void intercalacaoSS(Config *config, Metricas *metricas)
@@ -106,7 +110,14 @@ void intercalacaoSS(Config *config, Metricas *metricas)
     else if (config->situacao == 3)
         arq = "arquivos/random.bin";
 
-    gerarBlocosOrdenadosSubstituicao(arq, config->qnt_registros, metricas);
+    int blocos_gerados = gerarBlocosOrdenadosSubstituicao(arq, config->qnt_registros, metricas);
+
+    if (blocos_gerados == 1)
+    {
+        remove("resultado_final.bin");
+        rename("fitas/fita00.bin", "resultado_final.bin");
+        return; // finaliza a execuçao
+    }
 
     int entrada_base = 0;
     int saida_base = (TAM_FITAS / 2);
